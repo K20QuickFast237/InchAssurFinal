@@ -10,6 +10,10 @@ user_guide_src/cilexer/build/*
 user_guide_src/cilexer/dist/*
 user_guide_src/cilexer/pycilexer.egg-info/*
 
+/tests/
+
+writable/uploads/*
+writable/session/*
 writable/debugbar/*
 writable/logs/*
 .env
