@@ -23,9 +23,8 @@ class Filters extends BaseConfig
         'honeypot'      => Honeypot::class,
         'invalidchars'  => InvalidChars::class,
         'secureheaders' => SecureHeaders::class,
-        'authFilter' => \Modules\Auth\Filters\AuthFilter::class,
-        'throttle' => \App\Filters\Throttle::class,
-
+        'authFilter'    => \Modules\Auth\Filters\AuthFilter::class,
+        'throttle'      => \App\Filters\Throttle::class,
     ];
 
     /**
@@ -36,12 +35,15 @@ class Filters extends BaseConfig
      */
     public $globals = [
         'before' => [
+            'jwt' => ['except' => ['account/', 'account/login', 'account/resetPassword']],  // Ready to go just waiting the right moment to un comment
+            'authFilter' => ['except' => ['account/', 'account/login', 'account/resetPassword']],  // Ready to go just waiting the right moment to un comment
             // 'honeypot',
             // 'csrf',
             // 'invalidchars',
         ],
         'after' => [
             'toolbar',
+            'authFilter' => ['except' => ['account/logout']],
             // 'honeypot',
             // 'secureheaders',
         ],

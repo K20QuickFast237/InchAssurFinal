@@ -25,7 +25,7 @@ class CategoryProducts extends Migration
             UNIQUE KEY `nom_UNIQUE` (`nom`),
             KEY `image_foreign_idx` (`image_id`),
             CONSTRAINT `image_foreign` FOREIGN KEY (`image_id`) REFERENCES `images` (`id`)
-          ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
         ");
     }
 

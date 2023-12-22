@@ -11,9 +11,7 @@ $routes = \Config\Services::routes();
 #----------------------------------------------------------------------
 # Shield Actions routes
 #----------------------------------------------------------------------
-$routes->get('auth/a/show', 'CodeIgniter\Shield\Controllers\ActionController::show');
-$routes->post('auth/a/handle', 'CodeIgniter\Shield\Controllers\ActionController::handle');
-$routes->post('auth/a/verify', 'CodeIgniter\Shield\Controllers\ActionController::verify');
+// $routes->get('auth/a/show', 'CodeIgniter\Shield\Controllers\ActionController::show'); 
 
 
 /*
@@ -32,13 +30,14 @@ $routes->group('/account', ['namespace' => 'Modules\Auth\Controllers'], static f
 
     $routes->post('resetPassword', 'Auth::initiatePwdReset');
 
-    $routes->post('setPassword',  'Auth::resetPassword', ['filter' => 'auth']);
+    $routes->post('setPassword',  'Auth::resetPassword');
 
-    $routes->get('resetConfirm',  'Auth::resetCodeConfirm', ['filter' => 'auth']);
+    $routes->get('resetConfirm',  'Auth::resetCodeConfirm');
 
-    $routes->get('isRegistered',  'Auth::firstConnectDashbord', ['filter' => 'auth']);
+    // Role plus du tout compris
+    // $routes->get('isRegistered',  'Auth::firstConnectDashbord');
 
-    $routes->get('logout',        'Auth::deconnexion', ['filter' => 'auth']);
+    $routes->get('logout',        'Auth::deconnexion');
 });
 $routes->get('smsTest', 'Auth::sendTestMessage', ['namespace' => 'Modules\Auth\Controllers']);
 

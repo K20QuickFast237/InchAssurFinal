@@ -23,7 +23,7 @@ class AuthGroups extends ShieldAuthGroups
      * --------------------------------------------------------------------
      * The group that a newly registered user is added to.
      */
-    public string $defaultGroup = 'particulier';
+    public string $defaultGroup = 'Particulier';
 
     /**
      * --------------------------------------------------------------------
@@ -57,9 +57,13 @@ class AuthGroups extends ShieldAuthGroups
             'title'       => 'Medecin',
             'description' => 'Effectue des consultations et propose ses services de consultation.',
         ],
-        'entreprise' => [
+        'pntreprise' => [
             'title'       => 'Entreprise',
             'description' => 'Enregistre des utilisateurs (ses employés) et achete des produits en groupe (pour ses employés).',
+        ],
+        'pamille'         => [
+            'title'       => 'Famille',
+            'description' => 'Enregistre des membres (de sa famille) et achete des produits individuel ou de groupe.',
         ],
         'particulier' => [
             'title'       => 'Particulier',

@@ -21,7 +21,7 @@ class Portefeuilles extends Migration
             PRIMARY KEY (`id`),
             KEY `portefeuille_user_foreign_idx` (`utilisateur_id`),
             CONSTRAINT `portefeuille_user_foreign` FOREIGN KEY (`utilisateur_id`) REFERENCES `utilisateurs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
         ");
     }
 

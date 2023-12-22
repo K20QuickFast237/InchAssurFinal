@@ -16,22 +16,19 @@ helper(["email", "sms"]);
 # Evenements à la création de compte permettant d'envoyer un mail et un sms.
 #----------------------------------------------------------------------
 // Events::on('newRegistration', static function ($user, $tmpPass) {
-Events::on('newRegistration', static function ($user, $codeActivation) {
+Events::on('newRegistration', static function ($user, $codeActivation, $token) {
     $userEmail = $user->email;
     if ($userEmail === null) {
         throw new LogicException(
             'Email Activation needs user email address. user_id: ' . $user->id
         );
     }
-
     $date = Time::now()->toDateTimeString();
 
     // Send the email
     $email = emailer()->setFrom(setting('Email.fromEmail'), setting('Email.fromName') ?? '');
     $email->setTo($userEmail);
-    // $email->setSubject(lang('Auth.emailActivateSubject'));
     $email->setSubject("Activation de compte IncHAssur");
-    // $email->setMessage(view(setting('Auth.views')['email_manual_activate_email'], ['userEmail' => $userEmail, 'tmpPass' => $tmpPass, 'date' => $date]));
     $email->setMessage(view(
         setting('Auth.views')['registration_email'],
         [
@@ -39,8 +36,7 @@ Events::on('newRegistration', static function ($user, $codeActivation) {
             // 'tmpPass'       => $tmpPass,
             'codeconnect'   => $codeActivation,
             'date'          => $date,
-            'date'          => $date,
-            'token'         => "--ARANDOWSETOFCHARACTERS--",
+            'token'         => $token,
             'nomComplet'    => $user->username,
             'front_baseURL' => getenv("FRONTBASEURL"),
         ]
@@ -53,7 +49,7 @@ Events::on('newRegistration', static function ($user, $codeActivation) {
     // Clear the email
     $email->clear();
 });
-Events::on('newRegistration', static function ($user, $codeActivation) {
+Events::on('newRegistration', static function ($user, $codeActivation, $token = null) {
     $msg  = "Pour activez votre compte, utilisez le code:$codeActivation";
     // $dest = ["676233273"];
     $dest = [$user->tel1];

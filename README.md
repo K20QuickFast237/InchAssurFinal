@@ -1,2 +1,3 @@
-# CodeIgniter4-usage
-A place to apply concepts learned about Codeigniter4
+# IncH Assur
+
+The Backend of our application for selling micro insurance products. Builded with odeigniter4, CI4/Shield, firebase/JWT, Monetbill, ...

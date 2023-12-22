@@ -3,30 +3,26 @@
 namespace Modules\Utilisateurs\Models;
 
 use CodeIgniter\Model;
+use Modules\Utilisateurs\Entities\ProfilsEntity;
 
-class UtilisateursModel extends Model
+class UtilisateurProfilsModel extends Model
 {
     protected $DBGroup          = 'default';
-    protected $table            = 'Utilisateurs';
+    protected $table            = 'utilisateur_profils';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $insertID         = 0;
-    protected $returnType       = '\Modules\Utilisateurs\Entities\UtilisateursEntity';
+    protected $returnType       = ProfilsEntity::class;
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = [
-        "id", "code", "nom", "prenom", "date_naissance", "sexe", "profession",
-        "email", "tel1", "tel2", "photo_profil", "photo_cni",
-        "ville", "etatcivil", "nbr_enfant", "documents", "user_id"
-    ];
-    // "facebook", "twitter", "linkedin", "documents", "membres", "etat", "statut",
+    protected $allowedFields    = ["utilisateur_id", "profil_id", "defaultProfil", "attributor"];
 
     // Dates
     protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'dateCreation';
-    protected $updatedField  = 'dateModification';
-    protected $deletedField  = 'dateSuppression';
+    protected $updatedField  = '';
+    protected $deletedField  = '';
 
     // Validation
     protected $validationRules      = [];
@@ -44,14 +40,4 @@ class UtilisateursModel extends Model
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
-
-    public function getSimplified(int $id)
-    {
-        return $this->select("id, code, nom, prenom, photo_profil")->where('id', $id)->first();
-    }
-
-    public function getBulkSimplified(array $ids)
-    {
-        return $this->select("id, code, nom, prenom, photo_profil")->whereIn('id', $ids)->findAll();
-    }
 }

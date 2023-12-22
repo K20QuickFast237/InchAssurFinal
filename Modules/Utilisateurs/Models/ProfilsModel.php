@@ -4,25 +4,20 @@ namespace Modules\Utilisateurs\Models;
 
 use CodeIgniter\Model;
 
-class UtilisateursModel extends Model
+class ProfilsModel extends Model
 {
     protected $DBGroup          = 'default';
-    protected $table            = 'Utilisateurs';
+    protected $table            = 'profils';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $insertID         = 0;
-    protected $returnType       = '\Modules\Utilisateurs\Entities\UtilisateursEntity';
+    protected $returnType       = '\Modules\Utilisateurs\Entities\ProfilsEntity';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = [
-        "id", "code", "nom", "prenom", "date_naissance", "sexe", "profession",
-        "email", "tel1", "tel2", "photo_profil", "photo_cni",
-        "ville", "etatcivil", "nbr_enfant", "documents", "user_id"
-    ];
-    // "facebook", "twitter", "linkedin", "documents", "membres", "etat", "statut",
+    protected $allowedFields    = ["titre", "niveau", "description"];
 
     // Dates
-    protected $useTimestamps = true;
+    protected $useTimestamps = false;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'dateCreation';
     protected $updatedField  = 'dateModification';
@@ -44,14 +39,4 @@ class UtilisateursModel extends Model
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
-
-    public function getSimplified(int $id)
-    {
-        return $this->select("id, code, nom, prenom, photo_profil")->where('id', $id)->first();
-    }
-
-    public function getBulkSimplified(array $ids)
-    {
-        return $this->select("id, code, nom, prenom, photo_profil")->whereIn('id', $ids)->findAll();
-    }
 }

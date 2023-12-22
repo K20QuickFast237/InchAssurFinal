@@ -28,7 +28,7 @@ class Souscriptions extends Migration
             KEY `souscription_assurance_foreign_idx` (`assurance_id`),
             CONSTRAINT `souscription_assurance_foreign` FOREIGN KEY (`assurance_id`) REFERENCES `assurances` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
             CONSTRAINT `souscription_souscripteur_id_foeriegn` FOREIGN KEY (`souscripteur_id`) REFERENCES `utilisateurs` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
-          ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
         ");
     }
 

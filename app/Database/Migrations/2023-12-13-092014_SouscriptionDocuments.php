@@ -23,7 +23,7 @@ class SouscriptionDocuments extends Migration
             KEY `sousDoc_souscription_foreign_idx` (`souscription_id`),
             CONSTRAINT `sousDoc_document_foreign` FOREIGN KEY (`document_id`) REFERENCES `documents` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
             CONSTRAINT `sousDoc_souscription_foreign` FOREIGN KEY (`souscription_id`) REFERENCES `souscriptions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-          ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
         ");
     }
 

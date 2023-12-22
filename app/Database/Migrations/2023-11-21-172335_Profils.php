@@ -16,6 +16,7 @@ class Profils extends Migration
         CREATE TABLE `profils` (
             `id` int unsigned NOT NULL AUTO_INCREMENT,
             `titre` varchar(70) NOT NULL,
+            `description` text COLLATE utf8mb4_bin NOT NULL,
             `niveau` varchar(45) NOT NULL,
             `dateCreation` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `dateModification` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,

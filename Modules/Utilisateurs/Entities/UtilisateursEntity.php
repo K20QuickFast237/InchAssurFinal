@@ -52,15 +52,40 @@ class UtilisateursEntity extends Entity
         'id'     => "integer",
         'tel1'   => "integer",
         'tel2'   => "integer",
-        'etat'   => "etatcaster['Hors Ligne','En Ligne']",
-        'statut' => "etatcaster['Inactif','Actif','Bloqué','Archivé']",
+        // 'etat'   => "etatcaster['Hors Ligne','En Ligne']",
+        // 'statut' => "etatcaster['Inactif','Actif','Bloqué','Archivé']",
         'photo_profil' => "imgcaster",
         'photo_cni'    => "imgcaster",
     ];
 
     // Bind the type to the handler
     protected $castHandlers = [
-        'etatcaster' => \App\Entities\Cast\ListCaster::class,
         'imgcaster'  => \App\Entities\Cast\LinkCaster::class,
+        // 'etatcaster' => \App\Entities\Cast\ListCaster::class,
     ];
+
+    public function getProfils()
+    {
+        if (!isset($this->attributes['profils'])) {
+            $profils = model("UtilisateurProfilsModel")->join("profils", "profils.id=profil_id")
+                ->where("utilisateur_id", $this->attributes['id'])
+                ->findAll();
+            $profils = array_map(fn ($p) => ["id" => $p->niveau, "value" => $p->titre, "default" => (bool)$p->defaultProfil], $profils);
+            $this->attributes['profils'] = $profils;
+        }
+
+        return $this->attributes['profils'];
+    }
+
+    public function getDefaultProfil()
+    {
+        if (!isset($this->attributes['defaultProfil'])) {
+            foreach ($this->profils as $profil) {
+                if ($profil["default"]) {
+                    $this->attributes['defaultProfil'] = $profil;
+                }
+            }
+        }
+        return $this->attributes['defaultProfil'] ?? null;
+    }
 }

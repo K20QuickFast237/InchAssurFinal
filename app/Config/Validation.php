@@ -53,14 +53,19 @@ class Validation
             ],
         ],
         'password'        => [
-            'label'  => 'Password',
+            'label'  => 'Password|min_length[8]',
             'rules'  => 'required',
-            'errors' => ['required'    => "Le mot de passe est requis.",],
+            'errors' => ['required' => "Le mot de passe est requis.", "min_length" => "Le mot de passe est trop court."],
         ],
         'passwordConfirm' => [
             'label'  => 'Password Confirmation',
             'rules'  => 'required|matches[password]',
             'errors' => ['required'    => "La confirmation de mot de passe est requis.",],
+        ],
+        'categorie' => [
+            'label'  => 'categorie',
+            'rules'  => 'required|is_not_unique[profils.niveau]',
+            'errors' => ['required' => "La categorie est requise.", 'is_not_unique' => 'Categorie incorrecte.'],
         ],
         'nom'             => [
             'rules'  => 'required',

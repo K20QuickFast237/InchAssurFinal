@@ -23,7 +23,7 @@ class SouscriptionBeneficiaires extends Migration
             KEY `sousBenef_beneficiaire_foreign_idx` (`beneficiaire_id`),
             CONSTRAINT `sousBenef_beneficiaire_foreign` FOREIGN KEY (`beneficiaire_id`) REFERENCES `utilisateurs` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
             CONSTRAINT `sousBenef_souscription_foreign` FOREIGN KEY (`souscription_id`) REFERENCES `souscriptions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-          ) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
         ");
     }
 

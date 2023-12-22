@@ -47,7 +47,8 @@ class Auth extends ShieldAuth
      * --------------------------------------------------------------------
      */
     public array $views = [
-        'registration_email'          => 'Modules\Assurances\Views\emailActivation',
+        'registration_email'          => 'Modules\Auth\Views\emailActivation',
+        'pwdReset_email'              => 'Modules\Auth\Views\resetPWDemail',
         'login'                       => '\CodeIgniter\Shield\Views\login',
         'register'                    => '\CodeIgniter\Shield\Views\register',
         'layout'                      => '\CodeIgniter\Shield\Views\layout',
