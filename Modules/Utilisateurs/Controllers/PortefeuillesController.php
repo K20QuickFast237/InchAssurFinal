@@ -245,11 +245,10 @@ class PortefeuillesController extends ResourceController
             $utilisateur = $this->request->utilisateur;
         }
 
-        $data = model("PortefeuillesModel")->where('utilisateur_id', $utilisateur->id)->first();
         $response = [
             'statut'  => 'ok',
             'message' => 'Détails du Portefeuille.',
-            'data'    => $data,
+            'data'    => $utilisateur->pocket,
         ];
         return $this->sendResponse($response);
     }

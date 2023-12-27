@@ -37,8 +37,23 @@ class UtilisateursController extends ResourceController
      *
      * @return ResponseInterface The HTTP response.
      */
-    public function addMember()
+    public function addMember($identifier = null)
     {
+        $user = auth()->user();
+        if ($identifier) {
+            if (!$user->can('users.addUserMember')) {
+                $response = [
+                    'statut' => 'no',
+                    'message' => 'Action non authorisée pour ce profil.',
+                ];
+                return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+            }
+            $identifier = $this->getIdentifier($identifier);
+            $utilisateur = model("UtilisateursModel")->where($identifier['name'], $identifier['value'])->first();
+        } else {
+            $utilisateur = $this->request->utilisateur;
+        }
+
         $rules = [
             "nom"            => "required|string",
             "prenom"         => "required|string",
@@ -75,27 +90,21 @@ class UtilisateursController extends ResourceController
         if ($img) {
             $input['photoProfil'] = getInfoImage($img, 'uploads/utilisateurs/images/');
         }
-        $existed = model('UtilisateursModel')->select("code, nom, prenom, date_naissance, email, photo_profil, ville")
+        $existed = model('UtilisateursModel')
+            ->select("id, code, nom, prenom, date_naissance, email, photo_profil, ville")
             ->where('nom', $input['nom'])
             ->where('prenom', $input['prenom'])
             ->where('date_naissance', $input['dateNaissance'])
             ->first();
         if ($existed) {
-            $response = [
-                'statut'  => 'no',
-                'message' => "Un membre correspondant à ces données existe déja.",
-                'data'    => array_merge(
-                    ['email' => null, 'photoProfil' => null, 'ville' => null],
-                    array_filter($existed->toArray())
-                ),
-            ];
-            return $this->sendResponse($response, ResponseInterface::HTTP_NOT_ACCEPTABLE);
+            $userID = $existed->id;
+        } else {
+            $input['code']   = random_string('alnum', 10);
+            $input['statut'] = 'Inactif';
+            $userID = model("UtilisateursModel")->insert(new UtilisateursEntity($input));
         }
-        $input['code']   = random_string('alnum', 10);
-        $input['statut'] = 'Inactif';
-        $userID = model("UtilisateursModel")->insert(new UtilisateursEntity($input));
         $input['id'] = model("UtilisateurMembresModel")->insert([
-            "utilisateur_id" => 1,                   // Connected user Id
+            "utilisateur_id" => $utilisateur->id,  // Connected user Id
             "membre_id"      => $userID,
         ]);
 
@@ -112,24 +121,27 @@ class UtilisateursController extends ResourceController
      *
      * @return ResponseInterface The HTTP response.
      */
-    public function getMember()
+    public function getMember($identifier = null)
     {
-        $connecteduserID = 1;
-        $memberIDs = model("UtilisateurMembresModel")->where("utilisateur_id", $connecteduserID)->findColumn('membre_id');
-        // $members   = model('UtilisateursModel')->asArray()->select("id, code, nom, prenom, email, photo_profil")
-        $members   = model('UtilisateursModel')->select("id, code, nom, prenom, email, photo_profil")
-            ->whereIn("id", $memberIDs)
-            ->findAll();
+        $user = auth()->user();
+        if ($identifier) {
+            if (!$user->can('users.getUserMembers')) {
+                $response = [
+                    'statut' => 'no',
+                    'message' => 'Action non authorisée pour ce profil.',
+                ];
+                return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+            }
+            $identifier = $this->getIdentifier($identifier);
+            $utilisateur = model("UtilisateursModel")->where($identifier['name'], $identifier['value'])->first();
+        } else {
+            $utilisateur = $this->request->utilisateur;
+        }
 
-
-        //  array_merge(
-        //             ['email' => null, 'photoProfil' => null, 'ville' => null],
-        //             array_filter($existed->toArray())
-        //         )
-
+        $members = $utilisateur->membres;
         $response = [
             'statut'  => 'ok',
-            'message' => 'Liste des membres.',
+            'message' => $members ? 'Liste des membres.' : 'Aucun membre trouvé pour cet utilisateur.',
             'data'    => $members,
         ];
         return $this->sendResponse($response);

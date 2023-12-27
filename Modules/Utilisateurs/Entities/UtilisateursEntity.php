@@ -52,8 +52,8 @@ class UtilisateursEntity extends Entity
         'id'     => "integer",
         'tel1'   => "integer",
         'tel2'   => "integer",
-        // 'etat'   => "etatcaster['Hors Ligne','En Ligne']",
-        // 'statut' => "etatcaster['Inactif','Actif','Bloqué','Archivé']",
+        'etat'   => "etatcaster['Hors Ligne','En Ligne']",  // Not more really using
+        'statut' => "etatcaster['Inactif','Actif','Bloqué','Archivé']", // Not more really using
         'photo_profil' => "imgcaster",
         'photo_cni'    => "imgcaster",
     ];
@@ -87,5 +87,28 @@ class UtilisateursEntity extends Entity
             }
         }
         return $this->attributes['defaultProfil'] ?? null;
+    }
+
+    public function getMembres()
+    {
+        if (!isset($this->attributes['membres'])) {
+            $memberIDs = model("UtilisateurMembresModel")
+                ->where("utilisateur_id", $this->attributes['id'])
+                ->findColumn('membre_id');
+            $this->attributes['membres'] = $memberIDs ? model('UtilisateursModel')
+                ->select("id, code, nom, prenom, email, photo_profil")
+                ->whereIn("id", $memberIDs)
+                ->findAll()
+                : null;
+        }
+        return $this->attributes['membres'];
+    }
+
+    public function getPocket()
+    {
+        if (!isset($this->attributes['pocket'])) {
+            $this->attributes['pocket'] = model("PortefeuillesModel")->where('utilisateur_id', $this->attributes['id'])->first();
+        }
+        return $this->attributes['pocket'];
     }
 }

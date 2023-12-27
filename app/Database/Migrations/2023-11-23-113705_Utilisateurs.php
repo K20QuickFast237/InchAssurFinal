@@ -16,7 +16,7 @@ class Utilisateurs extends Migration
         CREATE TABLE `utilisateurs` (
             `id` int unsigned NOT NULL AUTO_INCREMENT,
             `code` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
-            `user_id` int unsigned NOT NULL,
+            `user_id` int unsigned DEFAULT NULL,
             `nom` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
             `prenom` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
             `date_naissance` date DEFAULT NULL,

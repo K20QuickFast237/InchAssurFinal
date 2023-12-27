@@ -12,15 +12,20 @@ $routes->resource('utilisateurs', [
 $routes->post('membres', '\Modules\Utilisateurs\Controllers\UtilisateursController::addMember');
 
 
+//------------ Pocket ---------------------------
+$routes->get('pocket', '\Modules\Utilisateurs\Controllers\PortefeuillesController::getUserPocket');
+
 //------------ Membres ---------------------------
 $routes->post('membres', '\Modules\Utilisateurs\Controllers\UtilisateursController::addMember');
 $routes->get('membres', '\Modules\Utilisateurs\Controllers\UtilisateursController::getMember');
 
+
 //------------ Users ---------------------------
 $routes->group('/users', ['namespace' => 'Modules\Utilisateurs\Controllers'], static function ($routes) {
     $routes->get('dashboard', 'UtilisateursController::dashboardInfos');
-    $routes->get('pocket',    'PortefeuillesController::getUserPocket');
     $routes->get('(:segment)/pocket',    'PortefeuillesController::getUserPocket/$1');
+    $routes->get('(:segment)/membres',    'UtilisateursController::getMember/$1');
+    $routes->post('(:segment)/membres',    'UtilisateursController::getMember/$1');
 });
 
 //------------ PorteFeuilles ---------------------------

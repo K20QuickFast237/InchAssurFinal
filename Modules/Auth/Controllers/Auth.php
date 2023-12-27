@@ -186,12 +186,13 @@ class Auth extends BaseController
                 'utilisateur_id' => $utilisateurID,
             ]);
             model("PortefeuillesModel")->insert($infoPortefeuille);
+            $this->request->utilisateur->statut = 'Actif';
+            model('UtilisateursModel')->save($this->request->utilisateur);
 
             model("ConnexionsModel")->db->transCommit();
-            $user = auth()->getProvider()->find($userID);
-            // print_r($user);
-            // exit;
-            $user->activate();
+            auth()->user()->activate();
+            // $user = auth()->getProvider()->find($userID);
+            // $user->activate();
             $response = [
                 'statut'  => 'ok',
                 'message' => 'confirmation validée',
