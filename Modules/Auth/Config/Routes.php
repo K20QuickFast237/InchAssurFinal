@@ -11,7 +11,7 @@ $routes = \Config\Services::routes();
 #----------------------------------------------------------------------
 # Shield Actions routes
 #----------------------------------------------------------------------
-// $routes->get('auth/a/show', 'CodeIgniter\Shield\Controllers\ActionController::show'); 
+$routes->get('auth/a/show', 'CodeIgniter\Shield\Controllers\ActionController::show');
 
 
 /*

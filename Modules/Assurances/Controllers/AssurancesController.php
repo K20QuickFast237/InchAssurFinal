@@ -20,10 +20,11 @@ class AssurancesController extends ResourceController
     public function index()
     {
         /** @todo penser à spécifier certains champs pour la liste vue que le listing doit être avec le strict nécessaire */
+        $data = model("AssurancesModel")->findAll();
         $response = [
-            'status' => 'ok',
-            'message' => 'Assurances disponibles.',
-            'data' => model("AssurancesModel")->findAll(),
+            'statut' => 'ok',
+            'message' => $data ? 'Assurances disponibles.' : "Aucune assurance disponible.",
+            'data' => $data ?? [],
         ];
         return $this->sendResponse($response);
     }
@@ -40,14 +41,14 @@ class AssurancesController extends ResourceController
             $identifier = $this->getIdentifier($id, 'id');
             $assurance  = model("AssurancesModel")->where($identifier['name'], $identifier['value'])->first();
             $response = [
-                'status' => 'ok',
+                'statut' => 'ok',
                 'message' => "Détails de l'assurance.",
                 'data' => $assurance,
             ];
             return $this->sendResponse($response);
         } catch (\Throwable $th) {
             $response = [
-                'status' => 'no',
+                'statut' => 'no',
                 'message' => 'Assurance introuvable.',
                 'data' => [],
             ];
@@ -74,14 +75,14 @@ class AssurancesController extends ResourceController
             $assurance->images;
         } catch (\Throwable $th) {
             $response = [
-                'status' => 'no',
+                'statut' => 'no',
                 'message' => 'Assurance introuvable.',
                 'data' => [],
             ];
             return $this->sendResponse($response, ResponseInterface::HTTP_NOT_ACCEPTABLE);
         }
         $response = [
-            'status' => 'ok',
+            'statut' => 'ok',
             'message' => "Détails de l'assurance.",
             'data' => $assurance,
         ];
@@ -308,17 +309,18 @@ class AssurancesController extends ResourceController
     {
         $identifier = $this->getIdentifier($id, 'id');
         $assurance  = model("AssurancesModel")->where($identifier['name'], $identifier['value'])->first();
+        $data = $assurance->services;
 
         // try {
         $response = [
-            'status'  => 'ok',
-            'message' => "Services de l'assurance.",
-            'data'    => $assurance->services,
+            'statut'  => 'ok',
+            'message' => $data ? "Services de l'assurance." : "Aucun service disponible pour cette assurance.",
+            'data'    => $data,
         ];
         return $this->sendResponse($response);
         // } catch (\Throwable $th) {
         //     $response = [
-        //         'status'  => 'no',
+        //         'statut'  => 'no',
         //         'message' => 'Assurance introuvable.',
         //         'data'    => [],
         //     ];
@@ -353,7 +355,7 @@ class AssurancesController extends ResourceController
             }
             $model->db->transCommit();
             $response = [
-                'status'  => 'ok',
+                'statut'  => 'ok',
                 'message' => "Service(s) associé(s) à l'assurance.",
                 'data'    => [],
             ];
@@ -378,19 +380,20 @@ class AssurancesController extends ResourceController
      */
     public function getAssurReductions($id)
     {
-        $identifier = $this->getIdentifier($id, 'id');
+        // $identifier = $this->getIdentifier($id, 'id');
+        $identifier = $this->getIdentifier($id);
         $assurance  = model("AssurancesModel")->where($identifier['name'], $identifier['value'])->first();
-
+        $data       = $assurance->reductions;
         // try {
         $response = [
-            'status'  => 'ok',
-            'message' => "Reductions de l'assurance.",
-            'data'    => $assurance->reductions,
+            'statut'  => 'ok',
+            'message' => $data ? "Reductions de l'assurance." : "Aucune réduction disponible pour cette assurance.",
+            'data'    => $data,
         ];
         return $this->sendResponse($response);
         // } catch (\Throwable $th) {
         //     $response = [
-        //         'status'  => 'no',
+        //         'statut'  => 'no',
         //         'message' => 'Aucun service trouvéAssurance introuvable.',
         //         'data'    => [],
         //     ];
@@ -425,7 +428,7 @@ class AssurancesController extends ResourceController
             }
             $model->db->transCommit();
             $response = [
-                'status'  => 'ok',
+                'statut'  => 'ok',
                 'message' => "Réduction(s) associée(s) à l'assurance.",
                 'data'    => [],
             ];
@@ -455,14 +458,14 @@ class AssurancesController extends ResourceController
         $data       = $assurance?->questionnaire;
         // try {
         $response = [
-            'status'  => 'ok',
+            'statut'  => 'ok',
             'message' => $data ? "Questionnaire de l'assurance." : "Assurance ou questionnaire introuvable.",
             'data'    => $data,
         ];
         return $this->sendResponse($response);
         // } catch (\Throwable $th) {
         //     $response = [
-        //         'status'  => 'no',
+        //         'statut'  => 'no',
         //         'message' => 'Aucun service trouvéAssurance introuvable.',
         //         'data'    => [],
         //     ];
@@ -497,7 +500,7 @@ class AssurancesController extends ResourceController
             }
             $model->db->transCommit();
             $response = [
-                'status'  => 'ok',
+                'statut'  => 'ok',
                 'message' => "Question(s) associée(s) à l'assurance.",
                 'data'    => [],
             ];
@@ -524,11 +527,12 @@ class AssurancesController extends ResourceController
     {
         $identifier = $this->getIdentifier($id, 'id');
         $assurance  = model("AssurancesModel")->where($identifier['name'], $identifier['value'])->first();
+        $data       = $assurance->payOptions;
 
         $response = [
-            'status'  => 'ok',
-            'message' => "Options de paiement de l'assurance.",
-            'data'    => $assurance->payOptions,
+            'statut'  => 'ok',
+            'message' => $data ? "Options de paiement de l'assurance." : "Aucune option de paiement pour cette assurance.",
+            'data'    => $data,
         ];
         return $this->sendResponse($response);
     }
@@ -560,7 +564,7 @@ class AssurancesController extends ResourceController
             }
             $model->db->transCommit();
             $response = [
-                'status'  => 'ok',
+                'statut'  => 'ok',
                 'message' => "Option(s) de paiements associée(s) à l'assurance.",
                 'data'    => [],
             ];
@@ -587,11 +591,12 @@ class AssurancesController extends ResourceController
     {
         $identifier = $this->getIdentifier($id, 'id');
         $assurance  = model("AssurancesModel")->where($identifier['name'], $identifier['value'])->first();
+        $data       = $assurance->documentation;
 
         $response = [
-            'status'  => 'ok',
-            'message' => "Documentation fournie par l'assurance.",
-            'data'    => $assurance->documentation,
+            'statut'  => 'ok',
+            'message' => $data ? "Documentation fournie par l'assurance." : "Aucune documentation disponible pour cette assurance.",
+            'data'    => $data,
         ];
         return $this->sendResponse($response);
     }
@@ -636,7 +641,7 @@ class AssurancesController extends ResourceController
 
             $model->db->transCommit();
             $response = [
-                'status'  => 'ok',
+                'statut'  => 'ok',
                 'message' => "Documents associé(s) à l'assurance.",
                 'data'    => [],
             ];
@@ -663,11 +668,12 @@ class AssurancesController extends ResourceController
     {
         $identifier = $this->getIdentifier($id, 'id');
         $assurance  = model("AssurancesModel")->where($identifier['name'], $identifier['value'])->first();
+        $data       = $assurance->images;
 
         $response = [
-            'status'  => 'ok',
-            'message' => "Documentation fournie par l'assurance.",
-            'data'    => $assurance->images,
+            'statut'  => 'ok',
+            'message' => $data ? "Images de l'assurance." : "Aucune image pour cette assurance.",
+            'data'    => $data,
         ];
         return $this->sendResponse($response);
     }
@@ -710,7 +716,7 @@ class AssurancesController extends ResourceController
         }
 
         $response = [
-            'status'  => 'ok',
+            'statut'  => 'ok',
             'message' => "Image ajoutée à l'assurance.",
             'data'    => [],
         ];
@@ -756,7 +762,7 @@ class AssurancesController extends ResourceController
         }
 
         $response = [
-            'status'  => 'ok',
+            'statut'  => 'ok',
             'message' => "Image par défaut mise à jour.",
             'data'    => [],
         ];

@@ -24,7 +24,7 @@ class ReductionsController extends ResourceController
     public function index()
     {
         $response = [
-            'status' => 'ok',
+            'statut' => 'ok',
             'message' => 'Reductions disponibles.',
             'data' => model("ReductionsModel")->findAll(),
         ];
@@ -42,14 +42,14 @@ class ReductionsController extends ResourceController
         try {
             $data = model("ReductionsModel")->where('id', $id)->first();
             $response = [
-                'status'  => 'ok',
+                'statut'  => 'ok',
                 'message' => 'Détails de la reduction.',
                 'data'    => $data ?? throw new \Exception('Reduction introuvable.'),
             ];
             return $this->sendResponse($response);
         } catch (\Throwable $th) {
             $response = [
-                'status'  => 'no',
+                'statut'  => 'no',
                 'message' => 'Reduction introuvable.',
                 'data'    => [],
                 'errors'  => $th->getMessage(),

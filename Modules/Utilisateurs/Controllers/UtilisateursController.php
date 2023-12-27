@@ -134,4 +134,20 @@ class UtilisateursController extends ResourceController
         ];
         return $this->sendResponse($response);
     }
+
+    /**
+     * Retrieve all user's data needed for dashboard
+     *
+     * @return ResponseInterface The HTTP response.
+     */
+    public function dashboardInfos()
+    {
+        $utilisateur = $this->request->utilisateur;
+        $response = [
+            'statut'  => 'ok',
+            'message' => 'Infos Dashboard.',
+            'data'    => $utilisateur,
+        ];
+        return $this->sendResponse($response);
+    }
 }

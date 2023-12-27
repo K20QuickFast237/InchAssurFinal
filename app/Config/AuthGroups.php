@@ -57,11 +57,11 @@ class AuthGroups extends ShieldAuthGroups
             'title'       => 'Medecin',
             'description' => 'Effectue des consultations et propose ses services de consultation.',
         ],
-        'pntreprise' => [
+        'entreprise' => [
             'title'       => 'Entreprise',
             'description' => 'Enregistre des utilisateurs (ses employés) et achete des produits en groupe (pour ses employés).',
         ],
-        'pamille'         => [
+        'famille'         => [
             'title'       => 'Famille',
             'description' => 'Enregistre des membres (de sa famille) et achete des produits individuel ou de groupe.',
         ],
@@ -97,7 +97,15 @@ class AuthGroups extends ShieldAuthGroups
      *
      * This defines group-level permissions.
      */
-    public array $matrix = [];/*
+    public array $matrix = [
+
+        'administrateur' => ["pockets.*", "users.*"],
+        'entreprise'     => ["*"],
+        'assureur'       => ["*"],
+        'medecin'        => ["*"],
+        'famille'        => ["*"],
+        'particulier'    => ["pockets.*", "users.*"],
+    ];/*
         'superadmin' => [
             'admin.*',
             'users.*',

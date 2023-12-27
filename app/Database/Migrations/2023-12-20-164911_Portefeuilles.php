@@ -14,7 +14,7 @@ class Portefeuilles extends Migration
         # add the fields
         $this->db->simpleQuery("
         CREATE TABLE `portefeuilles` (
-            `id` int unsigned NOT NULL,
+            `id` int unsigned NOT NULL AUTO_INCREMENT,
             `solde` float NOT NULL,
             `devise` varchar(45) DEFAULT NULL,
             `utilisateur_id` int unsigned NOT NULL,

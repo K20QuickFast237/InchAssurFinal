@@ -16,6 +16,21 @@ $routes->post('membres', '\Modules\Utilisateurs\Controllers\UtilisateursControll
 $routes->post('membres', '\Modules\Utilisateurs\Controllers\UtilisateursController::addMember');
 $routes->get('membres', '\Modules\Utilisateurs\Controllers\UtilisateursController::getMember');
 
+//------------ Users ---------------------------
+$routes->group('/users', ['namespace' => 'Modules\Utilisateurs\Controllers'], static function ($routes) {
+    $routes->get('dashboard', 'UtilisateursController::dashboardInfos');
+    $routes->get('pocket',    'PortefeuillesController::getUserPocket');
+    $routes->get('(:segment)/pocket',    'PortefeuillesController::getUserPocket/$1');
+});
+
+//------------ PorteFeuilles ---------------------------
+$routes->resource('pockets', [
+    'controller' => '\Modules\Utilisateurs\Controllers\PortefeuillesController',
+    'placeholder' => '(:segment)',
+    'except' => 'new,edit',
+]);
+$routes->post('pockets/(:segment)', '\Modules\Utilisateurs\Controllers\PortefeuillesController::update/$1');
+
 
 /* Exemple
     $routes->resource('photos');

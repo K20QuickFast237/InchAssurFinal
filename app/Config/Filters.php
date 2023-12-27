@@ -8,6 +8,7 @@ use CodeIgniter\Filters\DebugToolbar;
 use CodeIgniter\Filters\Honeypot;
 use CodeIgniter\Filters\InvalidChars;
 use CodeIgniter\Filters\SecureHeaders;
+use Fluent\Cors\Filters\CorsFilter;
 
 class Filters extends BaseConfig
 {
@@ -18,6 +19,7 @@ class Filters extends BaseConfig
      * @var array
      */
     public $aliases = [
+        'cors'          => CorsFilter::class,
         'csrf'          => CSRF::class,
         'toolbar'       => DebugToolbar::class,
         'honeypot'      => Honeypot::class,
@@ -76,6 +78,10 @@ class Filters extends BaseConfig
     public $filters = [
         'throttle' => [
             'before' => ['api/login']
+        ],
+        'cors'     => [
+            'before' => ['*'],
+            'after'  => ['*'],
         ]
     ];
 }

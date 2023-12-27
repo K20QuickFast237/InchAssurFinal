@@ -50,7 +50,7 @@ trait ControllerUtilsTrait
      * @param  string $idName - nom de l'identificateur
      * @return array
      */
-    private function getIdentifier(string $identifier, string $idName = null): array
+    private function getIdentifier(string $identifier, string $idName = 'id'): array
     {
         if (is_int($this->getConvertedValue($identifier))) {
             return [

@@ -22,10 +22,11 @@ class ServicesController extends ResourceController
      */
     public function index()
     {
+        $data = model("ServicesModel")->findAll();
         $response = [
-            'status' => 'ok',
-            'message' => 'Services disponibles.',
-            'data' => model("ServicesModel")->findAll(),
+            'statut' => 'ok',
+            'message' => $data ? 'Services disponibles.' : 'Aucun service disponible.',
+            'data' => $data ?? [],
         ];
         return $this->sendResponse($response);
     }
@@ -42,14 +43,14 @@ class ServicesController extends ResourceController
         $data = model("ServicesModel")->where($identifier['name'], $identifier['value'])->first();
         try {
             $response = [
-                'status' => 'ok',
+                'statut' => 'ok',
                 'message' => 'Détails du service.',
                 'data' => $data ?? throw new \Exception("Service introuvable"),
             ];
             return $this->sendResponse($response);
         } catch (\Throwable $th) {
             $response = [
-                'status' => 'no',
+                'statut' => 'no',
                 'message' => 'Service introuvable.',
                 'data' => [],
             ];
@@ -186,8 +187,8 @@ class ServicesController extends ResourceController
         {
             $entity = new ServicesEntity();
             $response = [
-                'status' => 'ok',
-                'message' => 'Status de services.',
+                'statut' => 'ok',
+                'message' => 'Statut de services.',
                 'data' => $entity->statesList,
             ];
             return $this->sendResponse($response);

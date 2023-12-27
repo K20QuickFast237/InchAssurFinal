@@ -25,6 +25,7 @@ use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\Shield\Entities\User;
 use Modules\Utilisateurs\Entities\UtilisateursEntity;
 use CodeIgniter\Events\Events;
+use Modules\Utilisateurs\Entities\PortefeuillesEntity;
 
 class Auth extends BaseController
 {
@@ -65,7 +66,7 @@ class Auth extends BaseController
                 throw new \Exception();
             }
             $input = $this->getRequestInput($this->request);
-            unset($input['passwordConfirm']);
+            // unset($input['passwordConfirm']);
             $input['nom']      = strtoupper($input['nom']);
             $input['prenom']   = ucfirst($input['prenom']);
             $input["code"]     = random_string('alnum', 10);
@@ -86,6 +87,7 @@ class Auth extends BaseController
 
             $utilisateur = new UtilisateursEntity($input);
             $utilisateur->user_id = $user->id;
+            model("UtilisateursModel")->db->transBegin();
             $utilisateur->id = model("UtilisateursModel")->insert($utilisateur);
             // Add the profil to the user
             $profil = model("ProfilsModel")->where("niveau", $input['categorie'])->first();
@@ -98,7 +100,7 @@ class Auth extends BaseController
             $user->addGroup(strtolower($profil->titre));
 
             model("ConnexionsModel")->where("user_id", $user->id)->set("codeconnect", $codeConnect)->update();
-
+            model("UtilisateursModel")->db->transCommit();
             /** @var JWTManager $manager */
             $manager = service('jwtmanager');
 
@@ -107,6 +109,7 @@ class Auth extends BaseController
 
             Events::trigger('newRegistration', $user, $codeConnect, $jwt);
         } catch (\Throwable $th) {
+            model("UtilisateursModel")->db->transRollback();
             $errorsData = $this->getErrorsData($th, isset($hasError));
             $response = [
                 'statut'  => 'no',
@@ -170,21 +173,24 @@ class Auth extends BaseController
         }
 
         $utilisateurID = $this->request->utilisateur->id;
-
         if ($codeRef == $input['code']) {
+            model("ConnexionsModel")->db->transBegin();
             model("ConnexionsModel")->where('user_id', $userID)
                 ->set('codeconnect', '000000')
                 ->update();
 
             // Association d'un portefeuille vide à l'utilisateur
-            $infoPortefeuille = [
-                'solde' => 0,
+            $infoPortefeuille = new PortefeuillesEntity([
+                'solde'  => 0,
                 'devise' => 'XAF',
                 'utilisateur_id' => $utilisateurID,
-            ];
+            ]);
             model("PortefeuillesModel")->insert($infoPortefeuille);
 
+            model("ConnexionsModel")->db->transCommit();
             $user = auth()->getProvider()->find($userID);
+            // print_r($user);
+            // exit;
             $user->activate();
             $response = [
                 'statut'  => 'ok',
@@ -249,6 +255,8 @@ class Auth extends BaseController
 
         // Récupére les données détaillées de l'utilisateur afin de transmettre dans la réponse
         $utilisateur = model("UtilisateursModel")->where('user_id', $user->id)->first();
+        $utilisateur->profils;
+        $utilisateur->defaultProfil;
 
         /** @var JWTManager $manager */
         $manager = service('jwtmanager');
@@ -259,7 +267,8 @@ class Auth extends BaseController
         $response = [
             'statut'  => 'ok',
             'message' => 'Connexion réussie',
-            'data'    => ["profils" => $utilisateur->profils, "profil" => $utilisateur->defaultProfil],
+            // 'data'    => ["profils" => $utilisateur->profils, "profil" => $utilisateur->defaultProfil],
+            'data'    => $utilisateur,
             'token'  => $jwt,
         ];
         return $this->sendResponse($response);
