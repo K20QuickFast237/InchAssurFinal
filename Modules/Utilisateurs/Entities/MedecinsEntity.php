@@ -34,6 +34,7 @@ class MedecinsEntity extends UtilisateursEntity
         // property_name => db_column_name
         'idMedecin'   => 'id',
         'photoProfil' => 'photo_profil',
+        'profil'      => 'profil_id',
         'photoCni'    => 'photo_cni',
         'etatCivil'   => 'etatcivil',
     ];

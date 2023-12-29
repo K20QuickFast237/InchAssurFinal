@@ -5,6 +5,7 @@ namespace Modules\Auth\Filters;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
+use Modules\Utilisateurs\Entities\UtilisateursEntity;
 
 class AuthFilter implements FilterInterface
 {
@@ -29,7 +30,17 @@ class AuthFilter implements FilterInterface
         /** @var JWTManager $manager */
         $manager = service('jwtmanager');
 
-        $utilisateur = model("UtilisateursModel")->where('user_id', $user->id)->first();
+        // $utilisateur = model("UtilisateursModel")->where('user_id', $user->id)->first();
+        //*
+        $userData   = model("UtilisateursModel")->asArray()->where('user_id', $user->id)->first();
+        $profilName = model("ProfilsModel")->where('id', $userData['profil_id'])->findColumn("titre")[0];
+        $entityName = str_replace(" ", "", $profilName) . "sEntity";
+        try {
+            $utilisateur = new $entityName($userData);
+        } catch (\Throwable $th) {
+            $utilisateur = new UtilisateursEntity($userData);
+        }
+        //*/
         $utilisateur->defaultProfil;
         @$request->utilisateur = $utilisateur;
         @$request->newToken = $manager->generateToken($user);

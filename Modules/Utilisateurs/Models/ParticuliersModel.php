@@ -9,7 +9,7 @@ class ParticuliersModel extends UtilisateursModel
     protected $returnType       = '\Modules\Utilisateurs\Entities\ParticuliersEntity';
     protected $allowedFields    = [
         "id", "code", "nom", "prenom", "date_naissance", "sexe", "profession",
-        "email", "tel1", "tel2", "photo_profil", "photo_cni", "etat", "statut",
+        "email", "tel1", "tel2", "photo_profil", "photo_cni", "etat", "statut", "user_id",
         "specialisation", "ville", "etatcivil", "nbr_enfant", "documents", "membres"
     ];
 }

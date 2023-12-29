@@ -62,6 +62,7 @@ class AssurancesEntity extends ProduitsEntity
         // property_name => db_column_name
         'idAssurance'      => 'id',
         'categorie'        => 'categorie_id',
+        'image'            => 'image_id',
         'type'             => 'type_id',
         'typeContrat'      => 'type_contrat',
         'shortDescription' => 'short_description',
@@ -121,7 +122,7 @@ class AssurancesEntity extends ProduitsEntity
      * 
      * renvoie la categorie associée à cette assurance
      *
-     * @return array une liste de documents constituant la documentation
+     * @return CategorieProduitsEntity
      */
     public function getCategorieId()
     {
@@ -132,6 +133,23 @@ class AssurancesEntity extends ProduitsEntity
         }
 
         return $this->attributes['categorie_id'] ?? null;
+    }
+
+    /**
+     * getImage
+     * 
+     * renvoie l'image par défaut de cette assurance
+     *
+     * @return array une liste de documents constituant la documentation
+     */
+    public function getImageId()
+    {
+        if (isset($this->attributes['image_id']) && gettype($this->attributes['image_id']) === 'string') {
+            $img = model("ImagesModel")->where('id', $this->attributes['image_id'])->first();
+            $this->attributes['image_id'] = $img;
+        }
+
+        return $this->attributes['image_id'] ?? null;
     }
 
     /**

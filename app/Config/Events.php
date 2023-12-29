@@ -49,6 +49,7 @@ Events::on('newRegistration', static function ($user, $codeActivation, $token) {
     // Clear the email
     $email->clear();
 });
+
 Events::on('newRegistration', static function ($user, $codeActivation, $token = null) {
     $msg  = "Pour activez votre compte, utilisez le code:$codeActivation";
     // $dest = ["676233273"];
@@ -56,6 +57,27 @@ Events::on('newRegistration', static function ($user, $codeActivation, $token = 
     // sendSmsMessage($dest, "InchAssur", $msg);
 });
 
+Events::on('profilAttributed', static function ($utilisateur, $profil) {
+    $date = Time::now()->toDateTimeString();
+    // Send the email
+    $email = emailer()->setFrom(setting('Email.fromEmail'), setting('Email.fromName') ?? '');
+    $email->setTo($utilisateur->email);
+    $email->setSubject("Profil $profil->titre ajouté");
+    $email->setMessage(view(
+        setting('Auth.views')['addedProfil_email'],
+        [
+            'subject'    => "Profil Ajouté",
+            'date'       => $date,
+            'profil'     => $profil->titre,
+            'nomComplet' => $utilisateur->nom . " " . $utilisateur->prenom,
+        ]
+    ));
+    if ($email->send(false) === false) {
+        throw new RuntimeException('Cannot send email for user: ' . $utilisateur->email . "\n" . $email->printDebugger(['headers']));
+    }
+    // Clear the email
+    $email->clear();
+});
 
 /*
  * --------------------------------------------------------------------

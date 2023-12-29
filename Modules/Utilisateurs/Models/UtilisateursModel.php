@@ -16,7 +16,7 @@ class UtilisateursModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         "id", "code", "nom", "prenom", "date_naissance", "sexe", "profession",
-        "email", "tel1", "tel2", "photo_profil", "photo_cni",
+        "email", "tel1", "tel2", "photo_profil", "photo_cni", "profil_id",
         "ville", "etatcivil", "nbr_enfant", "documents", "user_id"
     ];
     // "facebook", "twitter", "linkedin", "documents", "membres", "etat", "statut",

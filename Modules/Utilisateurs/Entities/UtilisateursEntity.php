@@ -37,9 +37,11 @@ class UtilisateursEntity extends Entity
     {
     }
 
+    // protected $dates = ['dateNaissance'];
     protected $datamap = [
         // property_name => db_column_name
         'idUtilisateur' => 'id',
+        'profil'        => 'profil_id',
         'photoProfil'   => 'photo_profil',
         'photoCni'      => 'photo_cni',
         'etatCivil'     => 'etatcivil',
@@ -54,8 +56,8 @@ class UtilisateursEntity extends Entity
         'tel2'   => "integer",
         'etat'   => "etatcaster['Hors Ligne','En Ligne']",  // Not more really using
         'statut' => "etatcaster['Inactif','Actif','Bloqué','Archivé']", // Not more really using
-        'photo_profil' => "imgcaster",
-        'photo_cni'    => "imgcaster",
+        'photo_profil'   => "imgcaster",
+        'photo_cni'      => "imgcaster",
     ];
 
     // Bind the type to the handler
@@ -64,31 +66,61 @@ class UtilisateursEntity extends Entity
         // 'etatcaster' => \App\Entities\Cast\ListCaster::class,
     ];
 
+    /**
+     * retrive the default profil of current user
+     *
+     * @return array
+     */
+    public function getProfilId()
+    {
+        if (isset($this->attributes['profil_id']) && gettype($this->attributes['profil_id']) === 'string') {
+            $profil = model("ProfilsModel")->where('id', $this->attributes['profil_id'])->first();
+            $this->attributes['profil_id'] = ["id" => $profil->niveau, "value" => $profil->titre];
+        }
+
+        return $this->attributes['profil_id'] ?? null;
+    }
+
+    /**
+     * Retrieve all current user's profils
+     *
+     * @return array
+     */
     public function getProfils()
     {
         if (!isset($this->attributes['profils'])) {
             $profils = model("UtilisateurProfilsModel")->join("profils", "profils.id=profil_id")
                 ->where("utilisateur_id", $this->attributes['id'])
                 ->findAll();
-            $profils = array_map(fn ($p) => ["id" => $p->niveau, "value" => $p->titre, "default" => (bool)$p->defaultProfil], $profils);
+            $profils = array_map(fn ($p) => ["id" => $p->niveau, "value" => $p->titre], $profils); // "default" => (bool)$p->defaultProfil
             $this->attributes['profils'] = $profils;
         }
 
         return $this->attributes['profils'];
     }
 
+    /**
+     * An other way to get the current user's default profil
+     *
+     * @return array
+     */
     public function getDefaultProfil()
     {
-        if (!isset($this->attributes['defaultProfil'])) {
-            foreach ($this->profils as $profil) {
-                if ($profil["default"]) {
-                    $this->attributes['defaultProfil'] = $profil;
-                }
-            }
-        }
-        return $this->attributes['defaultProfil'] ?? null;
+        // if (!isset($this->attributes['defaultProfil'])) {
+        //     foreach ($this->profils as $profil) {
+        //         if ($profil["default"]) {
+        //             $this->attributes['defaultProfil'] = $profil;
+        //         }
+        //     }
+        // }
+        return $this->attributes['profil'] ?? null;
     }
 
+    /**
+     * retrieve all current user's members
+     *
+     * @return array
+     */
     public function getMembres()
     {
         if (!isset($this->attributes['membres'])) {
@@ -96,7 +128,7 @@ class UtilisateursEntity extends Entity
                 ->where("utilisateur_id", $this->attributes['id'])
                 ->findColumn('membre_id');
             $this->attributes['membres'] = $memberIDs ? model('UtilisateursModel')
-                ->select("id, code, nom, prenom, email, photo_profil")
+                ->select("id, code, nom, prenom, date_naissance, email, photo_profil")
                 ->whereIn("id", $memberIDs)
                 ->findAll()
                 : null;
@@ -104,6 +136,11 @@ class UtilisateursEntity extends Entity
         return $this->attributes['membres'];
     }
 
+    /**
+     * Retrieve the current user's pocket
+     *
+     * @return void
+     */
     public function getPocket()
     {
         if (!isset($this->attributes['pocket'])) {

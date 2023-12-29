@@ -27,6 +27,7 @@ class EntreprisesEntity extends UtilisateursEntity
         // property_name => db_column_name
         'idEntreprise' => 'id',
         'photoProfil'  => 'photo_profil',
+        'profil'       => 'profil_id',
         'employes'     => 'membres',
     ];
 

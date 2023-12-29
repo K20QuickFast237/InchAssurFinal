@@ -26,6 +26,7 @@ class AssureursEntity extends EntreprisesEntity
         // property_name => db_column_name
         'idAssureur'  => 'id',
         'photoProfil' => 'photo_profil',
+        'profil'      => 'profil_id',
         'agents'      => 'membres',
     ];
 }

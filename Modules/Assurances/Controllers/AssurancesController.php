@@ -96,6 +96,13 @@ class AssurancesController extends ResourceController
      */
     public function create()
     {
+        if (!auth()->user()->can('assurances.create')) {
+            $response = [
+                'statut' => 'no',
+                'message' => 'Action non authorisée pour ce profil.',
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+        }
         $rules = [
             'nom'              => [
                 'rules'  => 'required|regex_match[/[0-9a-z áàéèíóúùòç_\'-]/i]|min_length[3]|is_unique[assurances.nom]',
@@ -152,36 +159,39 @@ class AssurancesController extends ResourceController
             ],
             'piecesAJoindre'    => 'if_exist',
             'piecesAJoindre.*'  => 'if_exist|string|is_not_unique[document_titres.nom]',
-            'images'           => [
-                'rules'  => 'uploaded[images]',
-                'errors' => ['uploaded' => 'Une(ou plusieurs) image est requise'],
+            'image'           => [
+                'rules'  => 'uploaded[image]',
+                'errors' => ['uploaded' => 'Une image est requise'],
             ],
         ];
 
         $input  = $this->getRequestInput($this->request);
         $images = $this->request->getFiles();
-
+        $defaultImg = $this->request->getFile("image");
         try {
             if (!$this->validate($rules)) {
                 $hasError = true;
                 throw new \Exception();
             }
 
-            $input['assureur_id'] = 1; //The current user (assureur) identifier
+            $input['assureur_id'] = $this->request->utilisateur->id; //The current user (assureur) identifier
             $input['code'] = random_string('alnum', 10);
             model("AssurancesModel")->db->transBegin();
-            $input['idAssurance'] = model("AssurancesModel")->insert(new AssurancesEntity($input));
+            $assurance = new AssurancesEntity($input);
+            $assurance->image = saveImage($defaultImg, 'uploads/assurances/images/');
+            // $input['idAssurance'] = model("AssurancesModel")->insert();
+            $assurance->id = model("AssurancesModel")->insert($assurance);
+            model("AssuranceCategoriesModel")->insert(["assurance_id" => $assurance->id, "categorie_id" => $input['categorie']]);
 
-            foreach ($images['images'] as $key => $img) {
-                $imgID = saveImage($img, 'uploads/assurances/images/');
-                if ($key == 0) {
-                    $input['image_id'] = $imgID;
-                    model("AssuranceImagesModel")->insert(["assurance_id" => $input['idAssurance'], "image_id" => $imgID, "isDefault" => true]);
-                } else {
-                    model("AssuranceImagesModel")->insert(["assurance_id" => $input['idAssurance'], "image_id" => $imgID]);
+            model("AssuranceImagesModel")->insert(["assurance_id" => $assurance->id, "image_id" => $assurance->image]);
+            if (isset($images['images'])) {
+                foreach ($images['images'] as $key => $img) {
+                    $imgID = saveImage($img, 'uploads/assurances/images/');
+                    model("AssuranceImagesModel")->insert(["assurance_id" => $assurance->id, "image_id" => $imgID]);
                 }
             }
             model("AssurancesModel")->db->transCommit();
+            $assurance->image;
         } catch (\Throwable $th) {
             model("AssurancesModel")->db->transRollback();
             $errorsData = $this->getErrorsData($th, isset($hasError));
@@ -197,7 +207,7 @@ class AssurancesController extends ResourceController
         $response = [
             'statut'  => 'ok',
             'message' => "Assurance enregistrée.",
-            'data'    => $input,
+            'data'    => $assurance,
         ];
         return $this->sendResponse($response, ResponseInterface::HTTP_CREATED);
     }
@@ -370,6 +380,143 @@ class AssurancesController extends ResourceController
             ];
             return $this->sendResponse($response, $errorsData['code']);
         }
+    }
+
+    /**
+     * Associate services to be provided by identified assurance
+     *
+     * @param  mixed $id
+     * @return ResponseInterface The HTTP response.
+     */
+    public function setAssurCategories($id)
+    {
+        $user = auth()->user();
+        $condition = model("AssurancesModel")->where('id', $id)->first();
+        if (!$user->can('assurances.create')) {
+            $response = [
+                'statut' => 'no',
+                'message' => 'Action non authorisée pour ce profil.',
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+        } elseif (!$condition || $condition->assureur_id != $this->request->utilisateur->id) {
+            $response = [
+                'statut' => 'no',
+                'message' => 'Action non authorisée pour cet utilisateur.',
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+        }
+
+        $rules = [
+            'categories'   => 'required',
+            'categories.*' => [
+                'rules'  => 'integer|is_not_unique[categorie_produits.id]',
+                'errors' => [
+                    'integer'       => 'Categorie non identifiable.',
+                    'is_not_unique' => 'Categorie non reconnue.'
+                ],
+            ],
+        ];
+        $input = $this->getRequestInput($this->request);
+
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception();
+            }
+            $model = model("AssuranceCategoriesModel");
+            // $model->db->transBegin();
+            foreach ($input['categories'] as $idCategorie) {
+                try {
+                    $model->insert(["assurance_id" => (int)$id, "categorie_id" => (int)$idCategorie]);
+                } catch (\Throwable $th) {
+                }
+            }
+            // $model->db->transCommit();
+        } catch (\Throwable $th) {
+            // $model->db->transRollback();
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $response = [
+                'statut'  => 'no',
+                'message' => "Impossible d'associer ces services.",
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
+
+        $response = [
+            'statut'  => 'ok',
+            'message' => "Assurance associée à la(aux) catégorie(s).",
+            'data'    => [],
+        ];
+        return $this->sendResponse($response);
+    }
+
+    public function setAssurdefaultCategory($id)
+    {
+        $user = auth()->user();
+        $condition = model("AssurancesModel")->where('id', $id)->first();
+        if (!$user->can('assurances.create')) {
+            $response = [
+                'statut' => 'no',
+                'message' => 'Action non authorisée pour ce profil.',
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+        } elseif (!$condition || $condition->assureur_id != $this->request->utilisateur->id) {
+            $response = [
+                'statut' => 'no',
+                'message' => 'Action non authorisée pour cet utilisateur.',
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+        }
+
+        $rules = [
+            'categorie'  => [
+                'rules'  => 'required|integer|is_not_unique[categorie_produits.id]',
+                'errors' => [
+                    'required'      => 'Categorie non identifiée.',
+                    'integer'       => 'Categorie non identifiable.',
+                    'is_not_unique' => 'Categorie non reconnue.'
+                ],
+            ],
+        ];
+        $input = $this->getRequestInput($this->request);
+
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception();
+            }
+        } catch (\Throwable $th) {
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $response = [
+                'statut'  => 'no',
+                'message' => "Impossible d'associer cette catégorie.",
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
+        $condition = model("AssuranceCategoriesModel")
+            ->where("assurance_id", $id)
+            ->where("categorie_id", $input['categorie'])
+            ->first();
+
+        if ($condition) {
+            model("AssurancesModel")->update($id, ["categorie_id" => $input['categorie']]);
+        } else {
+            $response = [
+                'statut'  => 'no',
+                'message' => "Catégorie par défaut mise à jour",
+                'data'    => [],
+            ];
+            return $this->sendResponse($response);
+        }
+
+        $response = [
+            'statut'  => 'ok',
+            'message' => "Assurance(s) associé(s) à la catégorie.",
+            'data'    => [],
+        ];
+        return $this->sendResponse($response);
     }
 
     /**
@@ -765,6 +912,18 @@ class AssurancesController extends ResourceController
             'statut'  => 'ok',
             'message' => "Image par défaut mise à jour.",
             'data'    => [],
+        ];
+        return $this->sendResponse($response);
+    }
+
+    public function getAssursOfCategory($id)
+    {
+        $assuranceIDs = model('AssuranceCategoriesModel')->where('categorie_id', $id)->findColumn('assurance_id');
+        $assurances   = $assuranceIDs ? model('AssurancesModel')->whereIn('id', $assuranceIDs)->findAll() : [];
+        $response = [
+            'statut' => 'ok',
+            'message' => $assurances ? 'Assurances de cette catégorie.' : "Aucune assurance pour cette catégorie.",
+            'data' => $assurances,
         ];
         return $this->sendResponse($response);
     }

@@ -6,6 +6,8 @@ use CodeIgniter\Entity\Entity;
 
 class ProfilsEntity extends Entity
 {
+    public const MEMBRE_PROFIL_ID = 12, PARTICULIER_PROFIL_ID = 1;
+
     protected $datamap = [
         // property_name => db_column_name
         'idProfil'      => 'profil_id',

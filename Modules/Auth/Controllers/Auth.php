@@ -26,6 +26,7 @@ use CodeIgniter\Shield\Entities\User;
 use Modules\Utilisateurs\Entities\UtilisateursEntity;
 use CodeIgniter\Events\Events;
 use Modules\Utilisateurs\Entities\PortefeuillesEntity;
+use Modules\Utilisateurs\Entities\ProfilsEntity;
 
 class Auth extends BaseController
 {
@@ -60,24 +61,26 @@ class Auth extends BaseController
         $config = config('Validation');
         $rules  = $config->registration;
 
+        $input = $this->getRequestInput($this->request);
+        // unset($input['passwordConfirm']);
+        $input['nom']      = strtoupper($input['nom']);
+        $input['prenom']   = ucfirst($input['prenom']);
+        $input["code"]     = random_string('alnum', 10);
+        $input['username'] = $input["nom"] . ' ' . $input['prenom'];
+        $codeConnect       = strtoupper(random_string("alnum", 6));
+        $input['codeconnect'] = $codeConnect;
+
         try {
             if (!$this->validate($rules)) {
                 $hasError = true;
                 throw new \Exception();
             }
-            $input = $this->getRequestInput($this->request);
-            // unset($input['passwordConfirm']);
-            $input['nom']      = strtoupper($input['nom']);
-            $input['prenom']   = ucfirst($input['prenom']);
-            $input["code"]     = random_string('alnum', 10);
-            $input['username'] = $input["nom"] . ' ' . $input['prenom'];
-            $codeConnect       = strtoupper(random_string("alnum", 6));
-            $input['codeconnect'] = $codeConnect;
-
             // Get the User Provider (UserModel by default)
             $users = auth()->getProvider();
 
             $user = new User($input);
+
+            model("UtilisateursModel")->db->transBegin();
             $users->save($user);
 
             // To get the complete user object with ID, we need to get from the database
@@ -87,17 +90,19 @@ class Auth extends BaseController
 
             $utilisateur = new UtilisateursEntity($input);
             $utilisateur->user_id = $user->id;
-            model("UtilisateursModel")->db->transBegin();
+
+            $profil = model("ProfilsModel")->where("niveau", $input['categorie'])->first();
+            $utilisateur->profil_id = $profil->id ?? ProfilsEntity::PARTICULIER_PROFIL_ID;
+
             $utilisateur->id = model("UtilisateursModel")->insert($utilisateur);
             // Add the profil to the user
-            $profil = model("ProfilsModel")->where("niveau", $input['categorie'])->first();
             model("UtilisateurProfilsModel")->insert([
                 "utilisateur_id" => $utilisateur->id,
-                "profil_id" => $profil->id,
-                "defaultProfil" => true
+                "profil_id"      => $profil->id,
+                "attributor"     => $utilisateur->id,
             ]);
             // Add to selected group
-            $user->addGroup(strtolower($profil->titre));
+            $user->addGroup('particulier', strtolower($profil->titre));
 
             model("ConnexionsModel")->where("user_id", $user->id)->set("codeconnect", $codeConnect)->update();
             model("UtilisateursModel")->db->transCommit();
@@ -106,8 +111,6 @@ class Auth extends BaseController
 
             // Generate JWT and return to client
             $jwt = $manager->generateToken($user, ttl: MONTH);
-
-            Events::trigger('newRegistration', $user, $codeConnect, $jwt);
         } catch (\Throwable $th) {
             model("UtilisateursModel")->db->transRollback();
             $errorsData = $this->getErrorsData($th, isset($hasError));
@@ -118,7 +121,17 @@ class Auth extends BaseController
             ];
             return $this->sendResponse($response, $errorsData['code']);
         }
-
+        try {
+            Events::trigger('newRegistration', $user, $codeConnect, $jwt);
+        } catch (\Throwable $th) {
+            $response = [
+                'statut'  => 'ok',
+                'message' => 'Un mail d\'activation à été envoyé dans votre boite mail',
+                'token'   => $jwt,
+                'errors'  => $th->getMessage(),
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
+        }
         $response = [
             'status'  => 'ok',
             'message' => 'Un mail d\'activation à été envoyé dans votre boite mail',

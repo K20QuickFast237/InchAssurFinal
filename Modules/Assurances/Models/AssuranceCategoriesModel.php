@@ -1,28 +1,27 @@
 <?php
 
-namespace Modules\Utilisateurs\Models;
+namespace Modules\Assurances\Models;
 
 use CodeIgniter\Model;
-use Modules\Utilisateurs\Entities\ProfilsEntity;
 
-class UtilisateurProfilsModel extends Model
+class AssuranceCategoriesModel extends Model
 {
     protected $DBGroup          = 'default';
-    protected $table            = 'utilisateur_profils';
+    protected $table            = 'assurance_categories';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $insertID         = 0;
-    protected $returnType       = ProfilsEntity::class;
+    protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ["utilisateur_id", "profil_id", "attributor"]; // , "defaultProfil"
+    protected $allowedFields    = ['assurance_id', 'categorie_id'];
 
     // Dates
-    protected $useTimestamps = true;
+    protected $useTimestamps = false;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'dateCreation';
-    protected $updatedField  = '';
-    protected $deletedField  = '';
+    protected $updatedField  = 'dateModification';
+    protected $deletedField  = 'dateSuppression';
 
     // Validation
     protected $validationRules      = [];

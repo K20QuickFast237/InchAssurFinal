@@ -9,9 +9,10 @@ use Modules\Produits\Models\ProduitsModel;
 class AssurancesModel extends ProduitsModel
 {
     protected $table            = 'assurances';
+    protected $primaryKey       = 'id';
     protected $returnType       = '\Modules\Assurances\Entities\AssurancesEntity';
     protected $allowedFields    = [
-        "nom", "code", "description", "short_description", "prix", "type_id", "duree", "type_contrat", "etat", "pieces_a_joindre",
+        "nom", "code", "description", "short_description", "prix", "image_id", "type_id", "duree", "type_contrat", "etat", "pieces_a_joindre",
         "assureur_id", "categorie_id", "services", "listeReductions"
     ];
 

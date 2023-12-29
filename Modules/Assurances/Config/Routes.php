@@ -10,9 +10,12 @@ $routes->group('assurances', ['namespace' => 'Modules\Assurances\Controllers'], 
     $routes->post("(:segment)/questionnaire", "AssurancesController::setAssurQuestionnaire/$1"); // codeAssurance
     $routes->post("(:segment)/images", "AssurancesController::setAssurImages/$1"); // codeAssurance
     $routes->post("(:segment)/services", "AssurancesController::setAssurServices/$1"); // codeAssurance
+    $routes->post("(:segment)/categories", "AssurancesController::setAssurCategories/$1"); // codeAssurance
+    $routes->post("(:segment)/defaultCategory", "AssurancesController::setAssurdefaultCategory/$1"); // codeAssurance
     $routes->post("(:segment)/payOptions", "AssurancesController::setAssurPayOptions/$1");
     $routes->post("(:segment)/documentation", "AssurancesController::setAssurDocumentation/$1"); // codeAssurance
     $routes->post("(:segment)/defaultImage", "AssurancesController::setAssurDefaultImg/$1"); // codeAssurance
+    $routes->get("categorie/(:num)", "AssurancesController::getAssursOfCategor/$1");
     $routes->get("(:segment)/documentation", "AssurancesController::getAssurDocumentation/$1"); // codeAssurance
     $routes->get("(:segment)/questionnaire", "AssurancesController::getAssurQuestionnaire/$1"); // codeAssurance
     $routes->get("(:segment)/reductions", "AssurancesController::getAssurReductions/$1"); // codeAssurance
@@ -21,14 +24,6 @@ $routes->group('assurances', ['namespace' => 'Modules\Assurances\Controllers'], 
     $routes->get("(:segment)/payOptions", "AssurancesController::getAssurPayOptions/$1"); // codeAssurance
     $routes->get("(:segment)/infos", "AssurancesController::getAssurInfos/$1"); // codeAssurance
     $routes->post("(:segment)", "AssurancesController::update/$1"); // codeAssurance
-    /*
-        // $routes->get("", "AssurancesController::index");
-        // $routes->post('', 'Photos::create');
-        // $routes->post('(:segment)', 'Photos::update/$1');
-        // $routes->put('(:segment)', 'Photos::update/$1');
-        // $routes->patch('(:segment)', 'Photos::update/$1');
-        // $routes->delete('(:segment)', 'Photos::delete/$1');
-    */
 });
 
 $routes->resource('assurances', [
