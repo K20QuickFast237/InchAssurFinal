@@ -12,9 +12,10 @@ class AssurancesModel extends ProduitsModel
     protected $primaryKey       = 'id';
     protected $returnType       = '\Modules\Assurances\Entities\AssurancesEntity';
     protected $allowedFields    = [
-        "nom", "code", "description", "short_description", "prix", "image_id", "type_id", "duree", "type_contrat", "etat", "pieces_a_joindre",
-        "assureur_id", "categorie_id", "services", "listeReductions"
+        "nom", "code", "description", "short_description", "prix", "image_id", "type_id", "duree", "etat",
+        "pieces_a_joindre", "assureur_id", "categorie_id", "services", "listeReductions"
     ];
+    //  "type_contrat",
 
     // Dates
     protected $useTimestamps = false;
@@ -31,7 +32,7 @@ class AssurancesModel extends ProduitsModel
 
     // Callbacks
     protected $allowCallbacks = true;
-    protected $beforeInsert   = [];
+    protected $beforeInsert   = ['add_default_piece_jointe'];
     protected $afterInsert    = [];
     protected $beforeUpdate   = [];
     protected $afterUpdate    = [];
@@ -39,6 +40,15 @@ class AssurancesModel extends ProduitsModel
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
+
+    protected function add_default_piece_jointe(array $data)
+    {
+        if (!isset($data['data']['pieces_a_joindre'])) {
+            $data['data']['pieces_a_joindre'] = json_encode([]);
+
+            return $data;
+        }
+    }
 
     public function getSimplified($id)
     {

@@ -54,6 +54,8 @@ class Autoload extends AutoloadConfig
         'Modules\Users'        => ROOTPATH . 'Modules/Utilisateurs',
         'Modules\Documents'    => ROOTPATH . 'Modules/Documents',
         'Modules\Utilisateurs' => ROOTPATH . 'Modules/Utilisateurs',
+        'Modules\Paiements'    => ROOTPATH . 'Modules/Paiements',
+        'Modules\CLI'          => ROOTPATH . 'Modules/CLI',
         // 'Modules/Image' => ROOTPATH . 'Modules/Image'
     ];
 
@@ -74,7 +76,9 @@ class Autoload extends AutoloadConfig
      *
      * @var array<string, string>
      */
-    public $classmap = [];
+    public $classmap = [
+        // 'Monetbil' => APPPATH . 'MonetbilSDK/monetbil.php',
+    ];
 
     /**
      * -------------------------------------------------------------------
@@ -92,7 +96,11 @@ class Autoload extends AutoloadConfig
      * @var string[]
      * @phpstan-var list<string>
      */
-    public $files = [];
+    public $files = [
+        // APPPATH . 'MonetbilSDK/monetbil.php',
+        // APPPATH . 'MonetbilSDK/config.php',
+        // APPPATH . 'MonetbilSDK/notify.php',
+    ];
 
     /**
      * -------------------------------------------------------------------

@@ -159,6 +159,9 @@ class UtilisateursController extends ResourceController
     public function dashboardInfos()
     {
         $utilisateur = $this->request->utilisateur;
+        unset($utilisateur->user_id);
+        $utilisateur->profils;
+        $utilisateur->defaultProfil;
         $response = [
             'statut'  => 'ok',
             'message' => 'Infos Dashboard.',

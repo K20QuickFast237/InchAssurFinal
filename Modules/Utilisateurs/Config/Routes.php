@@ -22,14 +22,14 @@ $routes->get('membres', '\Modules\Utilisateurs\Controllers\UtilisateursControlle
 
 //------------ Users ---------------------------
 $routes->group('/users', ['namespace' => 'Modules\Utilisateurs\Controllers'], static function ($routes) {
-    $routes->get('testes', 'UtilisateursController::test');
-    $routes->get('dashboard', 'UtilisateursController::dashboardInfos');
-    $routes->post('defaultProfil',    'UtilisateursController::setDefaultProfil');
-    $routes->get('(:segment)/pocket',    'PortefeuillesController::getUserPocket/$1');
-    $routes->get('(:segment)/membres',    'UtilisateursController::getMember/$1');
-    $routes->post('(:segment)/membres',    'UtilisateursController::addMember/$1');
-    $routes->post('(:segment)/profil',    'UtilisateursController::addprofil/$1');
-    $routes->post('(:segment)/defaultProfil',    'UtilisateursController::setDefaultProfil/$1');
+    $routes->get('testes',                    'UtilisateursController::test');
+    $routes->get('dashboard',                 'UtilisateursController::dashboardInfos');
+    $routes->post('defaultProfil',            'UtilisateursController::setDefaultProfil');
+    $routes->get('(:segment)/pocket',         'PortefeuillesController::getUserPocket/$1');
+    $routes->get('(:segment)/membres',        'UtilisateursController::getMember/$1');
+    $routes->post('(:segment)/membres',       'UtilisateursController::addMember/$1');
+    $routes->post('(:segment)/profil',        'UtilisateursController::addprofil/$1');
+    $routes->post('(:segment)/defaultProfil', 'UtilisateursController::setDefaultProfil/$1');
 });
 
 //------------ PorteFeuilles ---------------------------

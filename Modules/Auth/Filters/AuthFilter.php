@@ -43,7 +43,7 @@ class AuthFilter implements FilterInterface
         //*/
         $utilisateur->defaultProfil;
         @$request->utilisateur = $utilisateur;
-        @$request->newToken = $manager->generateToken($user);
+        @$request->newToken    = $manager->generateToken($user);
 
         return $request;
     }

@@ -56,8 +56,8 @@ class UtilisateursEntity extends Entity
         'tel2'   => "integer",
         'etat'   => "etatcaster['Hors Ligne','En Ligne']",  // Not more really using
         'statut' => "etatcaster['Inactif','Actif','Bloqué','Archivé']", // Not more really using
-        'photo_profil'   => "imgcaster",
-        'photo_cni'      => "imgcaster",
+        // 'photo_profil' => "imgcaster",
+        // 'photo_cni'    => "imgcaster",
     ];
 
     // Bind the type to the handler
@@ -131,7 +131,7 @@ class UtilisateursEntity extends Entity
                 ->select("id, code, nom, prenom, date_naissance, email, photo_profil")
                 ->whereIn("id", $memberIDs)
                 ->findAll()
-                : null;
+                : [];
         }
         return $this->attributes['membres'];
     }
@@ -147,5 +147,21 @@ class UtilisateursEntity extends Entity
             $this->attributes['pocket'] = model("PortefeuillesModel")->where('utilisateur_id', $this->attributes['id'])->first();
         }
         return $this->attributes['pocket'];
+    }
+
+    /**
+     * renvoie les détails de la photo de profil
+     *
+     * @return array
+     */
+    public function getPhotoProfil()
+    {
+        if (isset($this->attributes['photo_profil']) && gettype($this->attributes['photo_profil']) === 'string') {
+            $img = model("ImagesModel")->where('id', $this->attributes['photo_profil'])->first();
+            unset($img->type, $img->isLink, $img->extension);
+            $this->attributes['photo_profil'] = $img;
+        }
+
+        return $this->attributes['photo_profil'] ?? null;
     }
 }

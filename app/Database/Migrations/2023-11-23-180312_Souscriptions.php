@@ -16,7 +16,7 @@ class Souscriptions extends Migration
         CREATE TABLE `souscriptions` (
             `id` int unsigned NOT NULL AUTO_INCREMENT,
             `code` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
-            `cout` float NOT NULL,
+            `cout` float NOT NULL DEFAULT '0',
             `souscripteur_id` int unsigned NOT NULL,
             `dateCreation` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `assurance_id` int unsigned NOT NULL,

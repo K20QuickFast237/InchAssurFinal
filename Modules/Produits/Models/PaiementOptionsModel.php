@@ -48,4 +48,9 @@ class PaiementOptionsModel extends Model
         return $this->select("id, nom, description, depot_initial, cycle_longueur, cycle_taux, cycle_nombre, etape_duree")
             ->where('id', $id)->first();
     }
+
+    public function getUltraSimplified($id)
+    {
+        return $this->select("id, type, nom, description")->where('id', $id)->first();
+    }
 }

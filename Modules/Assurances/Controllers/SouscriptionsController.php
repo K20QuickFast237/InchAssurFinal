@@ -35,7 +35,7 @@ class SouscriptionsController extends ResourceController
         return $this->sendResponse($response);
     }
 
-    /**
+    /** @todo Ajouter les infos de paiement à récupérer dans les transactions
      * Retrieve the details of a subscription
      *
      * @param  int $id - the specified subscription Identifier
@@ -48,6 +48,7 @@ class SouscriptionsController extends ResourceController
         $data = model("SouscriptionsModel")->where($identifier['name'], $identifier['value'])->first();
         $data?->beneficiaires;
         $data?->documents;
+        $data?->questionAnswers;
         // } catch (\Throwable $th) {
         //     $response = [
         //         'status' => 'no',
@@ -555,7 +556,7 @@ class SouscriptionsController extends ResourceController
         return $this->sendResponse($response);
     }
 
-    public function getSouscriptionInfos($id)
+    public function getSouscriptionInfos($id)  //the show function already did the work
     {
     }
 
@@ -568,9 +569,9 @@ class SouscriptionsController extends ResourceController
                 renvoie les détails du produit, jumelé à l'identifiant de souscription.
         */
         //recuperons l'assurance
-
         $identifier = $this->getIdentifier($idAssur, 'id');
         $assurance  = model("AssurancesModel")->where($identifier['name'], $identifier['value'])->first();
+        $idAssur = $assurance->id;
         if (!$assurance) {
             $response = [
                 'status' => 'no',
@@ -580,7 +581,7 @@ class SouscriptionsController extends ResourceController
             return $this->sendResponse($response, ResponseInterface::HTTP_NOT_ACCEPTABLE);
         }
         // Vérifions l'existance d'une souscription en cours de creation
-        $currUserID = 1;    // utilisateur actuellement connecté
+        $currUserID = $this->request->utilisateur->id;    // utilisateur actuellement connecté
         $souscription = model("SouscriptionsModel")
             ->where('souscripteur_id', $currUserID)
             ->where('assurance_id', $idAssur)
@@ -595,78 +596,114 @@ class SouscriptionsController extends ResourceController
             $souscription = $this->createSubscription($currUserID, $idAssur);
             $answers = [];
         }
+        // return $this->show($souscription->id);   // the rest is not more used but this line should be removed.
+
 
         //Questions de l'assurance
         $assurQuestIDs = model("AssuranceQuestionsModel")->where('assurance_id', $idAssur)->findColumn('question_id') ?? [];
-        $optionIDs     = model("QuestionsModel")->whereIn('id', $assurQuestIDs)->findColumn('options') ?? [];
-        $optionIDs     = array_map(fn ($opt) => json_decode($opt) ?? [], $optionIDs);
-        $optionIDs     = array_unique(array_merge(...$optionIDs));
-        $subquestIDs   = model("QuestionOptionsModel")->whereIn('id', $optionIDs)->findColumn('subquestions') ?? [];
-        $subquestIDs   = array_map(fn ($sub) => json_decode($sub) ?? [], $subquestIDs);
+        if ($assurQuestIDs) {
+            $optionIDs     = model("QuestionsModel")->whereIn('id', $assurQuestIDs)->findColumn('options') ?? [];
+            $optionIDs     = array_map(fn ($opt) => json_decode($opt) ?? [], $optionIDs);
+            $optionIDs     = array_unique(array_merge(...$optionIDs));
+            $subquestIDs   = model("QuestionOptionsModel")->whereIn('id', $optionIDs)->findColumn('subquestions') ?? [];
+            $subquestIDs   = array_map(fn ($sub) => json_decode($sub) ?? [], $subquestIDs);
 
-        $subquestIDs   = array_unique(array_merge(...$subquestIDs));
+            $subquestIDs   = array_unique(array_merge(...$subquestIDs));
 
-        $questionIDs   = array_merge($assurQuestIDs, $subquestIDs);
-        $questionIDs   = array_unique($questionIDs);
+            $questionIDs   = array_merge($assurQuestIDs, $subquestIDs);
+            $questionIDs   = array_unique($questionIDs);
 
-        $questions = model("QuestionsModel")->whereIn('id', $questionIDs)->findAll();
-        //Nous sommes supposé avoir autant de ($)questions que de ($)questionIDs
-        $questions = array_combine($questionIDs, $questions);
-        $options   = model("QuestionOptionsModel")->whereIn('id', $optionIDs)->findAll();
-        //Nous sommes supposé avoir autant de ($)opions que de ($)optionIDs
-        $options   = array_combine($optionIDs, $options);
-        $options   = array_map(function ($opt) {
-            $opt->selected = false;
-            return $opt;
-        }, $options);
+            $questions = model("QuestionsModel")->whereIn('id', $questionIDs)->findAll();
+            //Nous sommes supposé avoir autant de ($)questions que de ($)questionIDs
+            $questions = array_combine($questionIDs, $questions);
+            $options   = model("QuestionOptionsModel")->whereIn('id', $optionIDs)->findAll();
+            //Nous sommes supposé avoir autant de ($)opions que de ($)optionIDs
+            $options   = array_combine($optionIDs, $options);
+            $options   = array_map(function ($opt) {
+                $opt->selected = false;
+                return $opt;
+            }, $options);
 
-        /* Maintenant que nous avons toutes les questions et toutes les réponses involved, faisons l'assemblage
-        pour obtenir le questionnaire de l'assurance avec les réponses le cas échéant.*/
-        // on indique pour les options ccelles qui sont choisies
-        foreach ($answers as $answer) {
-            $choix    = json_decode($answer["choix"], true) ?? [];
-            $optionID = $choix["idOption"];
-            $options[$optionID]->selected = true;
-        }
-
-        // on associe les options aux questions
-        foreach ($questions as $question) {
-            $optIDs = $question->options ?? [];
-            $opts   = [];
-            foreach ($optIDs as $optID) {
-                $opts[] = $options[$optID] ?? [];
+            /* Maintenant que nous avons toutes les questions et toutes les réponses involved, faisons l'assemblage
+            pour obtenir le questionnaire de l'assurance avec les réponses le cas échéant.*/
+            // on indique pour les options ccelles qui sont choisies
+            foreach ($answers as $answer) {
+                $choix    = json_decode($answer["choix"], true) ?? [];
+                $optionID = $choix["idOption"];
+                $options[$optionID]->selected = true;
             }
-            $question->options = $opts;
-        }
-        $questionnaire = [];
-        // on associe les questions aux sousquestions
-        foreach ($assurQuestIDs as $questID) {
-            $quest   = $questions[$questID];
-            $opts = [];
-            foreach ($quest->options as $opt) {
-                if ($opt->subquestions) {
-                    $subQuestIDs = $opt->subquestions;
-                    $opt->subquestions = array_map(fn ($id) => $questions[$id], $subQuestIDs);
+
+            // on associe les options aux questions
+            foreach ($questions as $question) {
+                $optIDs = $question->options ?? [];
+                $opts   = [];
+                foreach ($optIDs as $optID) {
+                    $opts[] = $options[$optID] ?? [];
                 }
-                $opts[] = $opt;
+                $question->options = $opts;
             }
-            $quest->options = $opts;
-            $questionnaire[] = $quest;
-        }
+            $questionnaire = [];
+            // on associe les questions aux sousquestions
+            foreach ($assurQuestIDs as $questID) {
+                $quest   = $questions[$questID];
+                $opts = [];
+                foreach ($quest->options as $opt) {
+                    if ($opt->subquestions) {
+                        $subQuestIDs = $opt->subquestions;
+                        $opt->subquestions = array_map(fn ($id) => $questions[$id], $subQuestIDs);
+                    }
+                    $opts[] = $opt;
+                }
+                $quest->options = $opts;
+                $questionnaire[] = $quest;
+            }
 
-        /* Nous pouvons enfin associer le questionnaire à l'assurance */
-        $assurance->questionnaire = $questionnaire;
+            /* Nous pouvons enfin associer le questionnaire à l'assurance */
+            $assurance->questionnaire = $questionnaire;
+        } else {
+            $assurance->questionnaire = [];
+        }
         $assurance->reductions;
         $assurance->services;
         $assurance->documentation;
         $assurance->payOptions;
+        $assurance->questionnaire;
         $assurance->images;
+        $assurance->questionnaire;
 
+        $souscription->assurance = $assurance;
+        $souscription->beneficiaires;
+        $souscription->documents;
+        $souscription->questionAnswers;
         $response = [
-            'status' => 'ok',
-            'message' => "Détails de l'assurance.",
-            'data' => $assurance,
+            'statut' => 'ok',
+            // 'message' => "Détails de l'assurance.",
+            'message' => "Détails de la souscription.",
+            // 'data' => $assurance,
+            'data' => $souscription,
         ];
         return $this->sendResponse($response);
     }
+
+    /* Après réflexion, pas vraiment utile
+        /**
+         * getPaymentOption
+         *
+         * @param  int $id - The subscription identifier
+         * @return ResponseInterface The HTTP response.
+         *
+        public function getPaymentOption($id)
+        {
+        }
+
+        /**
+         * setPaymentOption
+         *
+         * @param  int $id - The subscription identifier
+         * @return ResponseInterface The HTTP response.
+         *
+        public function setPaymentOption($id)
+        {
+        }
+    */
 }

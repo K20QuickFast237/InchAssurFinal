@@ -15,14 +15,14 @@ class Reductions extends Migration
         $this->db->simpleQuery("
         CREATE TABLE `reductions` (
             `id` int unsigned NOT NULL AUTO_INCREMENT,
-            `description` text COLLATE utf8mb4_bin NOT NULL,
-            `code` varchar(45) COLLATE utf8mb4_bin NOT NULL,
+            `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+            `code` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
             `auteur_id` int unsigned NOT NULL,
             `valeur` float DEFAULT NULL,
             `taux` float DEFAULT NULL,
             `usage_max_nombre` int DEFAULT NULL,
             `expiration_date` date DEFAULT NULL,
-            `utilise_nombre` int NOT NULL,
+            `utilise_nombre` int NOT NULL DEFAULT '0',
             PRIMARY KEY (`id`),
             UNIQUE KEY `code_UNIQUE` (`code`),
             KEY `reduction_auteur_id_foreign_idx` (`auteur_id`),

@@ -268,9 +268,10 @@ class Auth extends BaseController
         }
 
         // Récupére les données détaillées de l'utilisateur afin de transmettre dans la réponse
-        $utilisateur = model("UtilisateursModel")->where('user_id', $user->id)->first();
+        /* $utilisateur = model("UtilisateursModel")->where('user_id', $user->id)->first();
         $utilisateur->profils;
         $utilisateur->defaultProfil;
+        */
 
         /** @var JWTManager $manager */
         $manager = service('jwtmanager');
@@ -282,7 +283,8 @@ class Auth extends BaseController
             'statut'  => 'ok',
             'message' => 'Connexion réussie',
             // 'data'    => ["profils" => $utilisateur->profils, "profil" => $utilisateur->defaultProfil],
-            'data'    => $utilisateur,
+            // 'data'    => $utilisateur,
+            'data'    => [],
             'token'  => $jwt,
         ];
         return $this->sendResponse($response);

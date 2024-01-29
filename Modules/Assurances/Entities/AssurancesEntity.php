@@ -4,6 +4,9 @@ namespace Modules\Assurances\Entities;
 
 use App\Traits\ParamListTrait;
 use Modules\Produits\Entities\ProduitsEntity;
+use Modules\Utilisateurs\Entities\AssureursEntity;
+use Modules\Utilisateurs\Entities\EntreprisesEntity;
+
 /* Remarques importatntes pour cette entity class
     - l'attribut services lors de son enregistrement 
     doit être au format json_encode d'un tableau de doublons:
@@ -61,10 +64,12 @@ class AssurancesEntity extends ProduitsEntity
     protected $datamap = [
         // property_name => db_column_name
         'idAssurance'      => 'id',
+        'assureur'         => 'assureur_id',
         'categorie'        => 'categorie_id',
         'image'            => 'image_id',
         'type'             => 'type_id',
-        'typeContrat'      => 'type_contrat',
+        'listeServices'    => 'services',
+        // 'typeContrat'      => 'type_contrat',
         'shortDescription' => 'short_description',
         'piecesAJoindre'   => 'pieces_a_joindre',
     ];
@@ -72,6 +77,8 @@ class AssurancesEntity extends ProduitsEntity
     // Defining a type with parameters
     protected $casts = [
         'id'               => "integer",
+        'prix'             => "float",
+        'duree'            => "float",
         'pieces_a_joindre' => "json",
         'etat'             => "etatcaster[Inactif,Actif]",
     ];
@@ -145,7 +152,7 @@ class AssurancesEntity extends ProduitsEntity
     public function getImageId()
     {
         if (isset($this->attributes['image_id']) && gettype($this->attributes['image_id']) === 'string') {
-            $img = model("ImagesModel")->where('id', $this->attributes['image_id'])->first();
+            $img = model("ImagesModel")->select("id,uri")->where('id', $this->attributes['image_id'])->first();
             $this->attributes['image_id'] = $img;
         }
 
@@ -206,7 +213,9 @@ class AssurancesEntity extends ProduitsEntity
     {
         if (!isset($this->attributes['payOptions'])) {
             $payOptionIDs = model("AssurancePayOptionsModel")->where("assurance_id", $this->attributes['id'])->findColumn("paiement_option_id");
-            $this->attributes['payOptions'] = $payOptionIDs ? model("PaiementOptionsModel")->whereIn('id', $payOptionIDs)->findAll() : [];
+            $this->attributes['payOptions'] = $payOptionIDs ?
+                model("PaiementOptionsModel")->whereIn('id', $payOptionIDs)->findAll() :
+                [];
         }
         return $this?->attributes['payOptions'];
     }
@@ -225,7 +234,7 @@ class AssurancesEntity extends ProduitsEntity
                 $defaultImg = $assurImgs[$defaultImgKey];
 
                 $imgIDs = array_column($assurImgs, 'image_id');
-                $images = $imgIDs ? model("ImagesModel")->whereIn('id', $imgIDs)->findAll() : [];
+                $images = $imgIDs ? model("ImagesModel")->select("id,uri")->whereIn('id', $imgIDs)->findAll() : [];
 
                 $this->attributes['images'] = array_map(function ($img) use ($defaultImg) {
                     $img->isDefault = false;
@@ -239,8 +248,29 @@ class AssurancesEntity extends ProduitsEntity
         return $this->attributes['images'] ?? null;
     }
 
+    /**
+     * getCategorie
+     * 
+     * renvoie la categorie associée à cette assurance
+     *
+     * @return array une liste de documents constituant la documentation
+     */
+    public function getAssureurId()
+    {
+        // if (!isset($this->attributes['assureur'])) {
+        //     $assureur = model('AssureursModel')->getSimplified($this->attributes['assureur_id']);
+        //     $this->attributes['assureur'] = $assureur;
+        // }
 
+        // return $this->attributes['questionnaire'];
+        if (isset($this->attributes['assureur_id']) && preg_match('/[integer|string]/i', gettype($this->attributes['assureur_id']))) {
+            // if (isset($this->attributes['assureur_id']) && gettype($this->attributes['assureur_id']) == "string") {
+            $assureur = model('AssureursModel')->getSimplified($this->attributes['assureur_id']);
+            $this->attributes['assureur_id'] = $assureur->getSimplified();
+        }
 
+        return $this->attributes['assureur_id'] ?? null;
+    }
 
 
 

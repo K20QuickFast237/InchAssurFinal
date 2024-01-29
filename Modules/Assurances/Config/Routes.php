@@ -15,7 +15,7 @@ $routes->group('assurances', ['namespace' => 'Modules\Assurances\Controllers'], 
     $routes->post("(:segment)/payOptions", "AssurancesController::setAssurPayOptions/$1");
     $routes->post("(:segment)/documentation", "AssurancesController::setAssurDocumentation/$1"); // codeAssurance
     $routes->post("(:segment)/defaultImage", "AssurancesController::setAssurDefaultImg/$1"); // codeAssurance
-    $routes->get("categorie/(:num)", "AssurancesController::getAssursOfCategor/$1");
+    $routes->get("categorie/(:num)", "AssurancesController::getAssursOfCategory/$1");
     $routes->get("(:segment)/documentation", "AssurancesController::getAssurDocumentation/$1"); // codeAssurance
     $routes->get("(:segment)/questionnaire", "AssurancesController::getAssurQuestionnaire/$1"); // codeAssurance
     $routes->get("(:segment)/reductions", "AssurancesController::getAssurReductions/$1"); // codeAssurance
@@ -65,6 +65,8 @@ $routes->group('souscriptions', ['namespace' => 'Modules\Assurances\Controllers'
     $routes->get("(:segment)/documents", "SouscriptionsController::getSouscriptionDocument/$1"); // codeAssurance
     $routes->get('(:segment)/questionAnswers', 'SouscriptionsController::getQuestionAnswer/$1');
     $routes->get('(:segment)/beneficiaires', 'SouscriptionsController::getBeneficiaires/$1');
+    // $routes->get('(:segment)/payoption', 'SouscriptionsController::getPaymentOption/$1');
+    // $routes->post('(:segment)/payoption', 'SouscriptionsController::setPaymentOption/$1');
     $routes->post('(:segment)/beneficiaires', 'SouscriptionsController::addBeneficiaires/$1');
     $routes->post('(:segment)/questionAnswer', 'SouscriptionsController::addQuestionAnswer/$1');
     $routes->post("(:segment)/documents", "SouscriptionsController::addSouscriptionDocument/$1"); // codeAssurance

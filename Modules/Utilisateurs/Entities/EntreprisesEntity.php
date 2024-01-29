@@ -26,7 +26,7 @@ class EntreprisesEntity extends UtilisateursEntity
     protected $datamap = [
         // property_name => db_column_name
         'idEntreprise' => 'id',
-        'photoProfil'  => 'photo_profil',
+        'logo'         => 'photo_profil',
         'profil'       => 'profil_id',
         'employes'     => 'membres',
     ];
@@ -39,7 +39,7 @@ class EntreprisesEntity extends UtilisateursEntity
         'membres' => "json",
         'etat'   => "etatcaster['Hors Ligne','En Ligne']",
         'statut' => "etatcaster['Inactif','Actif','Bloqué','Archivé']",
-        'photo_profil' => "imgcaster",
+        // 'photo_profil' => "imgcaster",
     ];
 
     // Bind the type to the handler

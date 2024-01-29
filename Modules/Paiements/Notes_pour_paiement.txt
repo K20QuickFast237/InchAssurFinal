@@ -1,0 +1,61 @@
+
+Pour les Paiement, nous utilisons les éléments que sont:
+- le produit,
+- la ligne de transaction: Qui est une représentation d'une ligne de facture,
+- la transaction: qui équivaut à une facture,
+- la réduction,
+- le paiement,
+- l'option de paiement (payOption).
+
+
+Lors du paiement d'un produit, une transaction est enregistrée. Cette dernière contenant
+    un ensemble de lignes de transaction.
+La réduction est appliquée au niveau de la ligne de transaction car la réduction ne conderne 
+    que les produits de son émetteur (Celui qui cree la réduction).
+La somme de tous les montants à payer pour chaque ligne de transaction constitu le brut à payer
+    pour la transaction.
+L'option de paiement détermine le montant du premier paiement pour cette transaction (Car une
+    transaction peut être réglée en plusieurs paiements). Ceci à travers le taux_de_dépôt_initial 
+    de l'option de paiement choisi.
+
+
+Le mécanisme de réduction fonctionne ainsi:
+  - l'utilisateur insère son code de réduction sur le produit choisi.
+  - une fonction vérifie la validité du code et lui informe du montant réduit ainsi que du 
+    montant à payer (Aucun enregistrement n'est fait).
+  - l'utilisateur choisi son option de paiement parmi celles disponibles.
+  - une fonction détermine les détails du paiement (montant initial, date prochain paiement)
+    et lui en informe (Aucun enregistrement n'est fait).
+  - l'utilisateur accepte afin de poursuivre le paiement. Les données sont alors recalculés
+    (montant réduit, montant initial) enregistrées et le paiement initié.
+( Ceci est précisé parcequ'il y a un risque de légers écarts entre les calculs.
+Toute fois, le risque est très faible, mais nécessaire pour permettre une certaine reversibilité 
+des opérations au niveau de l'utilisateur. )
+
+
+
+To become a web development specialist,
+you must be curious and passionate about web technologies and start with the basics.
+You can enroll in a school, a training center or go self-taught.
+You can start by learning HTML and CSS jointly.
+When you become able to produce a simple page (like your PortFolio) with enough ease using only 
+these two languages, you can add javascript.
+Keep a copy of your work in HTML, CSS and provide interaction with JavaScript.
+There will be so many ideas that you won't know if you'll ever finish.
+From then on, you are ready to discover FrontEnd frameworks like React or Angular.
+Then learn to manage the versions of your work with a tool like Git and organize them with tools
+like Github or Gitlab.
+Here, you will have a fairly good overview of what you have already been able to do and will be
+very happy with it.
+You will feel the need to tackle the backend.
+Choose your language (Without the influence of trends but just according to the vision you have)
+even if it is the first that comes to mind, it will be a good choice.
+You will be able to quickly learn the basics and tackle a framework.
+Throughout this journey the biggest difficulty will be to maintain your orientation and your organization.
+Don't bother with more than three main resources for the same items.
+If you have made it this far, then you have already learned to learn from others.
+Get involved a little more in communities, also bring your experience and look for simple 
+tasks (that you feel capable of accomplishing) but paid (it's a motivation boost) to accomplish.
+Learn IT project management, notions of modeling and software architecture, give yourself challenges,
+and surprise yourself by being an expert.
+In reality we don't learn to be a specialist, we surprise ourselves by being a specialist.

@@ -172,10 +172,10 @@ class QuestionsController extends ResourceController
             $subquestionIDs = array_reduce($input['options'], fn ($curr, $elmt) => array_merge($curr, $elmt['subquestions'] ?? []), []);
             $subquestionIDs = array_unique($subquestionIDs);
 
-            $foundedquestIDs = model("QuestionsModel")->whereIn('id', $subquestionIDs)->findColumn('id');
+            $foundedquestIDs = $subquestionIDs ? model("QuestionsModel")->whereIn('id', $subquestionIDs)->findColumn('id') ?? [] : [];
 
             // Si les sousquestions existent, vérifier que cest éléments existent en BD et les enregistrer.
-            if (count($foundedquestIDs) != count($subquestionIDs)) {
+            if ($subquestionIDs && count($foundedquestIDs) != count($subquestionIDs)) {
                 $notFoundedQuestions = array_reduce($subquestionIDs, function ($curr, $elmt) use ($foundedquestIDs) {
                     if (array_search($elmt, $foundedquestIDs) === false) {
                         return $curr . " $elmt,";
@@ -199,7 +199,7 @@ class QuestionsController extends ResourceController
             $input['options'] = $optionIDs;
 
             /** @todo Ajouter l'auteur.*/
-            $input['auteur_id'] = 1;
+            $input['auteur_id'] = $this->request->utilisateur->id;
 
             // Enregistrer la question avec le champ options contenant le tableau précédent.
             $input['idQuestion'] = model("QuestionsModel")->insert(new QuestionsEntity($input));

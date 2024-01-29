@@ -79,6 +79,114 @@ Events::on('profilAttributed', static function ($utilisateur, $profil) {
     $email->clear();
 });
 
+
+#-------------------------------------------------
+# Evenements à l'invalidation d'une souscription.
+#-------------------------------------------------
+Events::on("EndedSouscription", static function ($utilisateur, $codeSouscription, $codetransaction = null, $normal = true) {
+    $userEmail = $utilisateur->email;
+    if ($userEmail === null) {
+        throw new LogicException(
+            'Email Activation needs user email address. user_id: ' . $utilisateur->id
+        );
+    }
+    $date = Time::now()->toDateTimeString();
+
+    // Send the email
+    $email = emailer()->setFrom(setting('Email.fromEmail'), setting('Email.fromName') ?? '');
+    $email->setTo($userEmail);
+    $email->setSubject("Expiration de souscription");
+    $data = [
+        'link'             => "(Lien de connexion)",
+        'codesouscription' => $codeSouscription,
+        'codetransaction'  => $codetransaction,
+        'date'             => $date,
+        'nomComplet'       => $utilisateur->prenom . ' ' . $utilisateur->nom,
+    ];
+    if ($normal) {
+        $email->setMessage(view(setting('Notify.views')['suscription_normaly_ended_email'], $data));
+    } else {
+        $email->setMessage(view(setting('Notify.views')['suscription_early_ended_email'], $data));
+    }
+
+
+    if ($email->send(false) === false) {
+        throw new RuntimeException('Cannot send email for user: ' . $userEmail . "\n" . $email->printDebugger(['headers']));
+    }
+
+    // Clear the email
+    $email->clear();
+});
+
+#-------------------------------------------------
+# Evenements à l'échéance de paiement.
+#-------------------------------------------------
+// Pour le cas de paiement cyclique.
+Events::on("PaiementRemember", static function ($utilisateur, $codetransaction) {
+    $userEmail = $utilisateur->email;
+    if ($userEmail === null) {
+        throw new LogicException(
+            'Email Activation needs user email address. user_id: ' . $utilisateur->id
+        );
+    }
+    $date = Time::now()->toDateTimeString();
+
+    // Send the email
+    $email = emailer()->setFrom(setting('Email.fromEmail'), setting('Email.fromName') ?? '');
+    $email->setTo($userEmail);
+    $email->setSubject("Rappel de paiement");
+    $data = [
+        'link'            => "(Lien de connexion)",
+        'codetransaction' => $codetransaction,
+        'date'            => $date,
+        'nomComplet'      => $utilisateur->prenom . ' ' . $utilisateur->nom,
+    ];
+
+    $email->setMessage(view(setting('Notify.views')['paiement_remember_email'], $data));
+
+
+    if ($email->send(false) === false) {
+        throw new RuntimeException('Cannot send email for user: ' . $userEmail . "\n" . $email->printDebugger(['headers']));
+    }
+
+    // Clear the email
+    $email->clear();
+});
+
+// Pour le cas de paiement sur une période.
+Events::on("PaiementSuggest", static function ($utilisateur, $codetransaction, $dateFin) {
+    $userEmail = $utilisateur->email;
+    if ($userEmail === null) {
+        throw new LogicException(
+            'Email Activation needs user email address. user_id: ' . $utilisateur->id
+        );
+    }
+    $date = Time::now()->toDateTimeString();
+
+    // Send the email
+    $email = emailer()->setFrom(setting('Email.fromEmail'), setting('Email.fromName') ?? '');
+    $email->setTo($userEmail);
+    $email->setSubject("Rappel de paiement");
+    $data = [
+        'link'            => "(Lien de connexion)",
+        'codetransaction' => $codetransaction,
+        'date'            => $date,
+        'dateFin'         => $dateFin,
+        'nomComplet'      => $utilisateur->prenom . ' ' . $utilisateur->nom,
+    ];
+
+    $email->setMessage(view(setting('Notify.views')['paiement_suggest_email'], $data));
+
+
+    if ($email->send(false) === false) {
+        throw new RuntimeException('Cannot send email for user: ' . $userEmail . "\n" . $email->printDebugger(['headers']));
+    }
+
+    // Clear the email
+    $email->clear();
+});
+
+
 /*
  * --------------------------------------------------------------------
  * Application Events

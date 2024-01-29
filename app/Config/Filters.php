@@ -37,15 +37,15 @@ class Filters extends BaseConfig
      */
     public $globals = [
         'before' => [
-            'jwt' => ['except' => ['account/', 'account/login', 'account/resetPassword']],  // Ready to go just waiting the right moment to un comment
-            'authFilter' => ['except' => ['account/', 'account/login', 'account/resetPassword']],  // Ready to go just waiting the right moment to un comment
+            'jwt' => ['except' => ['account/', 'account/login', 'account/resetPassword', 'tools/*']],  // Ready to go just waiting the right moment to un comment
+            'authFilter' => ['except' => ['account/', 'account/login', 'account/resetPassword', 'tools/*']],  // Ready to go just waiting the right moment to un comment
             // 'honeypot',
             // 'csrf',
             // 'invalidchars',
         ],
         'after' => [
             'toolbar',
-            'authFilter' => ['except' => ['account/logout']],
+            'authFilter' => ['except' => ['account/logout', 'tools/*']],
             // 'honeypot',
             // 'secureheaders',
         ],

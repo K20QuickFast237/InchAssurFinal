@@ -29,6 +29,22 @@ class SouscriptionsEntity extends Entity
     ];
 
     /**
+     * getDateCreation
+     * 
+     * renvoie la date de création formatée
+     *
+     * @return object les données souscripteur
+     */
+    public function getDateCreation()
+    {
+        if (isset($this->attributes['dateCreation']) && gettype($this->attributes['dateCreation']) === 'string') {
+            $this->attributes['dateCreation'] = date('d-m-Y', strtotime($this->attributes['dateCreation']));
+        }
+
+        return $this?->attributes['dateCreation'];
+    }
+
+    /**
      * getSouscripteurId
      * 
      * renvoie le souscripteur associée à cette souscription
@@ -77,7 +93,7 @@ class SouscriptionsEntity extends Entity
             $benefIDs = model('SouscriptionBeneficiairesModel')->where('souscription_id', $this->attributes['id'])->findColumn('beneficiaire_id');
             $this->attributes['beneficiaires'] = $benefIDs ? model('UtilisateursModel')->getBulkSimplified($benefIDs) : null;
         }
-        return $this->attributes['beneficiaires'];
+        return $this->attributes['beneficiaires'] ?? [];
     }
 
     /**
@@ -94,7 +110,7 @@ class SouscriptionsEntity extends Entity
             $this->attributes['questionAnswers'] = $answerIDs ? model("QuestionAnswersModel")->whereIn("id", $answerIDs)->findAll() : null;
         }
 
-        return $this->attributes['questionAnswers'];
+        return $this->attributes['questionAnswers'] ?? [];
     }
 
     /**
@@ -111,6 +127,6 @@ class SouscriptionsEntity extends Entity
             $this->attributes['documents'] = $documentIDs ? model("DocumentsModel")->whereIn("id", $documentIDs)->findAll() : null;
         }
 
-        return $this?->attributes['documents'];
+        return $this?->attributes['documents'] ?? [];
     }
 }
