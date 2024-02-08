@@ -15,6 +15,7 @@ $routes->group('assurances', ['namespace' => 'Modules\Assurances\Controllers'], 
     $routes->post("(:segment)/payOptions", "AssurancesController::setAssurPayOptions/$1");
     $routes->post("(:segment)/documentation", "AssurancesController::setAssurDocumentation/$1"); // codeAssurance
     $routes->post("(:segment)/defaultImage", "AssurancesController::setAssurDefaultImg/$1"); // codeAssurance
+    $routes->get("utilisateur/(:segment)", "AssurancesController::index/$1");
     $routes->get("categorie/(:num)", "AssurancesController::getAssursOfCategory/$1");
     $routes->get("(:segment)/documentation", "AssurancesController::getAssurDocumentation/$1"); // codeAssurance
     $routes->get("(:segment)/questionnaire", "AssurancesController::getAssurQuestionnaire/$1"); // codeAssurance
@@ -26,6 +27,7 @@ $routes->group('assurances', ['namespace' => 'Modules\Assurances\Controllers'], 
     $routes->post("(:segment)", "AssurancesController::update/$1"); // codeAssurance
 });
 
+$routes->get('allAssurances', '\Modules\Assurances\Controllers\AssurancesController::allInsurances');
 $routes->resource('assurances', [
     'controller' => '\Modules\Assurances\Controllers\AssurancesController',
     'placeholder' => '(:segment)',
@@ -39,6 +41,7 @@ $routes->group('questions', ['namespace' => 'Modules\Assurances\Controllers'], f
     $routes->get('tarifTypes', 'QuestionsController::getTarifTypes');
 });
 /** @todo Ajouter la gestion des accès sur la ressource questions */
+$routes->get('allQuestions', '\Modules\Assurances\Controllers\QuestionsController::index');
 $routes->post('questions/(:segment)', '\Modules\Assurances\Controllers\QuestionsController::update/$1');
 $routes->resource('questions', [
     'controller' => '\Modules\Assurances\Controllers\QuestionsController',
@@ -49,6 +52,7 @@ $routes->resource('questions', [
 
 //------------ Services ---------------------------
 /** @todo Ajouter la gestion des accès sur la ressource services */
+$routes->get('allServices', '\Modules\Assurances\Controllers\ServicesController::index');
 $routes->post('services/(:segment)', '\Modules\Assurances\Controllers\ServicesController::update/$1');
 $routes->resource('services', [
     'controller' => '\Modules\Assurances\Controllers\ServicesController',
@@ -56,23 +60,26 @@ $routes->resource('services', [
     'except' => 'new,edit',
 ]);
 
-
 //------------ Souscriptions ---------------------------
 $routes->group('souscriptions', ['namespace' => 'Modules\Assurances\Controllers'], function ($routes) {
     // Enregistre la réponse à une question pour une souscription
     $routes->get("assurances/(:segment)/infos", "SouscriptionsController::getSouscriptAssurInfo/$1"); // codeAssurance
+    $routes->get('signature', 'SouscriptionsController::codeSignature');
+    $routes->get('utilisateur/(:segment)', 'SouscriptionsController::index/$1');
     // $routes->get("(:segment)/infos", "SouscriptionsController::getSouscriptionInfos/$1"); // codeAssurance
     $routes->get("(:segment)/documents", "SouscriptionsController::getSouscriptionDocument/$1"); // codeAssurance
     $routes->get('(:segment)/questionAnswers', 'SouscriptionsController::getQuestionAnswer/$1');
     $routes->get('(:segment)/beneficiaires', 'SouscriptionsController::getBeneficiaires/$1');
     // $routes->get('(:segment)/payoption', 'SouscriptionsController::getPaymentOption/$1');
     // $routes->post('(:segment)/payoption', 'SouscriptionsController::setPaymentOption/$1');
+    $routes->post('signature', 'SouscriptionsController::decodeSignature');
     $routes->post('(:segment)/beneficiaires', 'SouscriptionsController::addBeneficiaires/$1');
     $routes->post('(:segment)/questionAnswer', 'SouscriptionsController::addQuestionAnswer/$1');
     $routes->post("(:segment)/documents", "SouscriptionsController::addSouscriptionDocument/$1"); // codeAssurance
 
 });
 /** @todo n'autoriser la mise à jour qu'à un administrateur */
+$routes->get('allSouscriptions', '\Modules\Assurances\Controllers\SouscriptionsController::allSubscriptions');
 $routes->post('souscriptions/(:segment)', '\Modules\Assurances\Controllers\SouscriptionsController::update/$1');
 /** @todo Ajouter la gestion des accès sur la ressource souscriptions */
 $routes->resource('souscriptions', [

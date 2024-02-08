@@ -121,7 +121,7 @@ Events::on("EndedSouscription", static function ($utilisateur, $codeSouscription
 #-------------------------------------------------
 # Evenements à l'échéance de paiement.
 #-------------------------------------------------
-// Pour le cas de paiement cyclique.
+// Pour le cas de paiement cyclique. 
 Events::on("PaiementRemember", static function ($utilisateur, $codetransaction) {
     $userEmail = $utilisateur->email;
     if ($userEmail === null) {

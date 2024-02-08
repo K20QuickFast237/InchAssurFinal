@@ -198,7 +198,6 @@ class QuestionsController extends ResourceController
             // Regrouper les identifiants des options enregistrées dans un tableau d'options.
             $input['options'] = $optionIDs;
 
-            /** @todo Ajouter l'auteur.*/
             $input['auteur_id'] = $this->request->utilisateur->id;
 
             // Enregistrer la question avec le champ options contenant le tableau précédent.

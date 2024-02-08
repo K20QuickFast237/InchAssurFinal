@@ -8,6 +8,7 @@ use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\RESTful\ResourceController;
 use Modules\Assurances\Entities\AssurancesEntity;
+use Modules\Produits\Entities\ProduitsEntity;
 
 class AssurancesController extends ResourceController
 {
@@ -17,8 +18,35 @@ class AssurancesController extends ResourceController
 
     protected $helpers = ['Modules\Documents\Documents', 'Modules\Images\Images', 'text'];
 
-    public function index()
+    public function index($identifier = null)
     {
+        if ($identifier) {
+            $identifier = $this->getIdentifier($identifier, 'id');
+            $utilisateur = model("UtilisateursModel")->where($identifier['name'], $identifier['value'])->first();
+        } else {
+            $utilisateur = $this->request->utilisateur;
+        }
+        /** @todo penser à spécifier certains champs pour la liste vue que le listing doit être avec le strict nécessaire */
+        $data = model("AssurancesModel")->where("assureur_id", $utilisateur->id)
+            ->where("etat", ProduitsEntity::ACTIF)
+            ->findAll();
+        $response = [
+            'statut' => 'ok',
+            'message' => $data ? 'Assurances disponibles.' : "Aucune assurance disponible.",
+            'data' => $data ?? [],
+        ];
+        return $this->sendResponse($response);
+    }
+
+    public function allInsurances()
+    {
+        if (!auth()->user()->inGroup('administrateur')) {
+            $response = [
+                'statut' => 'no',
+                'message' => 'Action non authorisée pour ce profil.',
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+        }
         /** @todo penser à spécifier certains champs pour la liste vue que le listing doit être avec le strict nécessaire */
         $data = model("AssurancesModel")->findAll();
         $response = [

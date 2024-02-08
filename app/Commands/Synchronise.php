@@ -3,7 +3,6 @@
 namespace App\Commands;
 
 use CodeIgniter\CLI\BaseCommand;
-use CodeIgniter\CLI\CLI;
 use Modules\Assurances\Entities\SouscriptionsEntity;
 use Modules\Paiements\Entities\PayOptionEntity;
 use Modules\Paiements\Entities\TransactionEntity;
@@ -12,7 +11,7 @@ use CodeIgniter\Events\Events;
 class Synchronise extends BaseCommand
 {
     protected $group       = 'fonctionalities';
-    protected $name        = 'app:synchonise';
+    protected $name        = 'app:synchronise';
     protected $description = 'Updates paiements, transactions and subscriptions status and send related notifications.';
 
     public function run(array $params)
@@ -22,15 +21,15 @@ class Synchronise extends BaseCommand
                         L'objectif est de récupérer les souscriptions et
                 en fonction de leur date d'expiration, mettre à jour le statut.
         -------------------------------------------------------------------------- */
-        $souscriptions  = model("SouscriptionsModel")->where("statut", SouscriptionsEntity::ACTIF)->findAll();
+        $souscriptions  = model("SouscriptionsModel")->where("etat", SouscriptionsEntity::ACTIF)->findAll();
         $endenSouscript = array_filter($souscriptions, fn ($s) => strtotime($s->dateFinValidite) > strtotime(date('Y-m-d')));
         $endedIds       = array_map(fn ($s) => $s->id, $endenSouscript);
         $userIds        = array_map(fn ($s) => $s->souscripteur_id, $endenSouscript);
 
         // on notifie
-        $users   = model("UtilisateursModel")->select("id, nom, prenom, email")
+        $users   = $userIds ? model("UtilisateursModel")->select("id, nom, prenom, email")
             ->whereIn('id', $userIds)
-            ->findAll();
+            ->findAll() : [];
         foreach ($endenSouscript as $souscript) {
             $userSubscriptCode = $souscript->code;
             $user = array_filter($users, fn ($u) => $u->id == $souscript->souscripteur_id);
@@ -48,7 +47,7 @@ class Synchronise extends BaseCommand
             ->where("etat", TransactionEntity::EN_COURS)
             ->findAll();
         $payOptionIds = array_unique(array_map(fn ($t) => $t->pay_option_id, $transacts));
-        $payOptions   = model("PaiementOptionsModel")->whereIn('id', $payOptionIds)->findAll();
+        $payOptions   = $payOptionIds ? model("PaiementOptionsModel")->whereIn('id', $payOptionIds)->findAll() : [];
         $payOptions   = array_combine($payOptionIds, $payOptions);
 
         // $today = date('Y-m-d');
@@ -87,19 +86,19 @@ class Synchronise extends BaseCommand
         }
 
         $transactIds = array_unique(array_merge($endedTransact, $stepPayNotify, $planPayNotify));
-        $souscriptIds = model("TransactionLignesModel")
+        $souscriptIds = $transactIds ? model("TransactionLignesModel")
             ->join("lignetransactions", "transaction_lignes.ligne_id=lignetransactions.id", "left")
             ->select("transaction_id, souscription_id")
             ->whereIn("transaction_id", $transactIds)
-            ->findAll();
+            ->findAll() : [];
         // ->findColumn("souscription_id");
         $souscriptIds = array_combine(array_column($souscriptIds, "transaction_id"), array_column($souscriptIds, "souscription_id"));
 
-        $souscripts = model("SouscriptionsModel")->whereIn("id", array_values($souscriptIds))->findAll();
+        $souscripts = $souscriptIds ? model("SouscriptionsModel")->whereIn("id", array_values($souscriptIds))->findAll() : [];
         $userIds = array_map(fn ($s) => [$s->id => $s->souscripteur_id], $souscripts);
-        $users   = model("UtilisateursModel")->select("id, nom, prenom, email")
+        $users   = $userIds ? model("UtilisateursModel")->select("id, nom, prenom, email")
             ->whereIn('id', array_values($userIds))
-            ->findAll();
+            ->findAll() : [];
 
         $infotransact = array_map(function ($t) use ($transacts, $souscripts, $souscriptIds, $users, $userIds) {
             $transact = array_filter($transacts, fn ($e) => $e->id == $t);
@@ -156,18 +155,10 @@ class Synchronise extends BaseCommand
                 $userSubscriptCode = $userSubs[$user->id];
                 Events::trigger('EndedSouscription', $user, $userSubscriptCode, $normal = false);
             }
-
-
-
-
-
-
-
-
         */
 
         $endedIds = array_unique(array_merge($endedIds, $endedIds));
-        model("SouscriptionsModel")->whereIn('id', $endedIds)->set("etat", SouscriptionsEntity::TERMINE)->update();
+        $endedIds ? model("SouscriptionsModel")->whereIn('id', $endedIds)->set("etat", SouscriptionsEntity::TERMINE)->update() : null;
 
         return EXIT_SUCCESS;
     }

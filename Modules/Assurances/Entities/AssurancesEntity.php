@@ -3,6 +3,7 @@
 namespace Modules\Assurances\Entities;
 
 use App\Traits\ParamListTrait;
+use Modules\Produits\Entities\PaiementOptionsEntity;
 use Modules\Produits\Entities\ProduitsEntity;
 use Modules\Utilisateurs\Entities\AssureursEntity;
 use Modules\Utilisateurs\Entities\EntreprisesEntity;
@@ -215,7 +216,7 @@ class AssurancesEntity extends ProduitsEntity
             $payOptionIDs = model("AssurancePayOptionsModel")->where("assurance_id", $this->attributes['id'])->findColumn("paiement_option_id");
             $this->attributes['payOptions'] = $payOptionIDs ?
                 model("PaiementOptionsModel")->whereIn('id', $payOptionIDs)->findAll() :
-                [];
+                [model("PaiementOptionsModel")->where('id', PaiementOptionsEntity::DefaultID)->first()];
         }
         return $this?->attributes['payOptions'];
     }

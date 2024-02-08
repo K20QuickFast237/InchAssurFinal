@@ -10,6 +10,7 @@ class ProduitsEntity extends Entity
 {
     use ParamListTrait; // provide a function to return the static statuts property defined down bellow.
 
+    const INACTIF = 0, ACTIF = 1;
     protected $datamap = [
         // property_name => db_column_name
         'idProduit' => 'id',

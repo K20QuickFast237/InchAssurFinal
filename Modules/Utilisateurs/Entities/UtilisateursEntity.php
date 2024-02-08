@@ -164,4 +164,19 @@ class UtilisateursEntity extends Entity
 
         return $this->attributes['photo_profil'] ?? null;
     }
+
+    /**
+     * renvoie les souscriptions
+     *
+     * @return array
+     */
+    public function getSouscriptions()
+    {
+        if (!isset($this->attributes['souscriptions'])) {
+            $this->attributes['souscriptions'] = model("SouscriptionsModel")
+                ->where("souscripteur_id", $this->attributes['id'])
+                ->findAll();
+        }
+        return $this->attributes['souscriptions'];
+    }
 }

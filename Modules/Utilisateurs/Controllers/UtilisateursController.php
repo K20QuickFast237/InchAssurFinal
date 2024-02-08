@@ -299,8 +299,36 @@ class UtilisateursController extends ResourceController
         return $this->sendResponse($response);
     }
 
+    public function getSouscriptions($identifier = null)
+    {
+        $user = auth()->user();
+        if ($identifier) {
+            if (!$user->can('users.getSubscriptions')) {
+                $response = [
+                    'statut' => 'no',
+                    'message' => 'Action non authorisée pour ce profil.',
+                ];
+                return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+            }
+            $identifier = $this->getIdentifier($identifier);
+            $utilisateur = model("UtilisateursModel")->where($identifier['name'], $identifier['value'])->first();
+        } else {
+            $utilisateur = $this->request->utilisateur;
+        }
+
+        $souscriptions = $utilisateurs->souscriptions;
+        $response = [
+            'statut'  => 'ok',
+            'message' => $souscriptions ? 'Souscriptions trouvées.' : 'Aucune souscription trouvée pour cet utilisateur.',
+            'data'    => $souscriptions,
+        ];
+        return $this->sendResponse($response);
+    }
+
     public function test()
     {
+        echo base_url('paiements/notify');
+        exit;
         $particulier = model("ParticuliersModel")->where("user_id", auth()->user()->id)->first();
         $assureur    = model("AssureursModel")->where("user_id", auth()->user()->id)->first();
         $admin       = model("AdministrateursModel")->where("user_id", auth()->user()->id)->first();

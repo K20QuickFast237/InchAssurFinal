@@ -11,6 +11,7 @@ class QuestionOptionsEntity extends Entity
     protected $casts = [
         'id'           => "integer",
         'subquestions' => "json",
+        'prix'         => "integer",
     ];
 
     protected $datamap = [

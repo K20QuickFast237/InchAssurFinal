@@ -7,6 +7,7 @@ use CodeIgniter\Entity\Entity;
 
 class PaiementOptionsEntity extends Entity
 {
+    const DefaultID = 1;
     // Defining a type with parameters
     protected $casts = [
         'id'                 => "integer",
@@ -30,4 +31,10 @@ class PaiementOptionsEntity extends Entity
         "tauxCycle"        => "cycle_taux",
         "nombreCycle"      => "cycle_nombre",
     ];
+
+    /*Détermine le montant minimal à payer avec cette option pour le montant final donné en paramètre*/
+    public function get_initial_amount_from_option($toPay)
+    {
+        return ($toPay * $this->attributes['depot_initial_taux']) / 100;
+    }
 }

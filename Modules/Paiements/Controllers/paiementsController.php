@@ -214,19 +214,19 @@ class PaiementsController extends ResourceController
                 'errors'     => ['is_not_unique' => 'Pays non pris en charge.'],
             ],
             'returnURL'      => [
-                'rules'      => 'required|valid_url]',
+                'rules'      => 'required|valid_url',
                 'errors'     => [
                     'required'  => "L'URL de retour doit être spécifié.",
                     'valid_url' => "URL de retour non conforme.",
                 ],
             ],
-            // 'avance'         => [
-            //     'rules'        => 'required|numeric',
-            //     'errors'       => [
-            //         'required' => 'Avance non définie.',
-            //         'numeric'  => "Valeur de l'avance invalide",
-            //     ],
-            // ],
+            'avance'         => [
+                'rules'        => 'required|numeric',
+                'errors'       => [
+                    'required' => 'Avance non définie.',
+                    'numeric'  => "Valeur de l'avance invalide",
+                ],
+            ],
             'codeReduction'  => [
                 'rules'        => 'if_exist|is_not_unique[reductions.code]',
                 'errors'       => [
@@ -280,7 +280,17 @@ class PaiementsController extends ResourceController
             $prixReduction = 0;
         }
         $prixToPay = $prixInitial - $prixReduction;
-
+        // Eliminons l'étape de calcul de TVA
+        $prixToPayNet = $prixToPay;
+        $avance       = (float)$input['avance'];
+        $minPay       = $payOption->get_initial_amount_from_option($prixToPayNet);
+        if ($avance < $minPay) {
+            $response = [
+                'statut'  => 'no',
+                'message' => "Le montant minimal à payer pour cette option de paiement est $minPay.",
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+        }
         // 1- Initiation de la ligne transaction
         $ligneInfo = new LignetransactionEntity([
             "produit_id"         => $input['idAssurance'],
@@ -294,14 +304,14 @@ class PaiementsController extends ResourceController
             "prix_total_net"     => $prixToPay,
         ]);
         isset($reduction) ? $ligneInfo->reduction_code = $reduction->code : null;
+        model("TransactionsModel")->db->transBegin();
         $ligneInfo->id = model("LignetransactionsModel")->insert($ligneInfo);
 
         // 2- Initiation de la Transaction
-        $tva          = model("TvasModel")->find(1);
+        /*$tva          = model("TvasModel")->find(1); 
         $prixTVA      = ($prixToPay * $tva->taux) / 100;
-        $prixToPayNet = $prixToPay + $prixTVA;
-        // $avance       = (float)$input['avance'];
-        $avance       = $payOption->get_initial_amount_from_option($prixToPayNet);
+        $prixToPayNet = $prixToPay + $prixTVA;*/
+
         /** @todo après confirmation du paiement par l'API, mettre à jour l'état en fonction de la valeur
          * du reste_a_payer. conf: document word ReferenceClassDiagramme.
          * @done
@@ -311,8 +321,8 @@ class PaiementsController extends ResourceController
             "motif"         => "Paiement Souscription $souscription->code",
             "pay_option_id" => $payOption->id,
             "prix_total"    => $prixToPay,
-            "tva_taux"      => $tva->taux,
-            "valeur_tva"    => $prixTVA,
+            "tva_taux"      => 0, //$tva->taux,
+            "valeur_tva"    => 0, //$prixTVA,
             "net_a_payer"   => $prixToPayNet,
             "avance"        => $avance,
             "reste_a_payer" => $prixToPayNet - $avance,
@@ -320,7 +330,7 @@ class PaiementsController extends ResourceController
         ]);
         $transactInfo->id = model("TransactionsModel")->insert($transactInfo);
         model("TransactionLignesModel")->insert(['transaction_id' => $transactInfo->id, 'ligne_id' => $ligneInfo->id]);
-
+        model("TransactionsModel")->db->transCommit();
         // 3- On initie le paiement,
         $paiementInfo = array(
             'code'    => random_string('alnum', 10),

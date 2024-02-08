@@ -25,6 +25,8 @@ $routes->group('/users', ['namespace' => 'Modules\Utilisateurs\Controllers'], st
     $routes->get('testes',                    'UtilisateursController::test');
     $routes->get('dashboard',                 'UtilisateursController::dashboardInfos');
     $routes->post('defaultProfil',            'UtilisateursController::setDefaultProfil');
+    $routes->post('souscriptions',            'UtilisateursController::getSouscriptions');
+    $routes->post('(:segment)/souscriptions', 'UtilisateursController::getSouscriptions/$1');
     $routes->get('(:segment)/pocket',         'PortefeuillesController::getUserPocket/$1');
     $routes->get('(:segment)/membres',        'UtilisateursController::getMember/$1');
     $routes->post('(:segment)/membres',       'UtilisateursController::addMember/$1');

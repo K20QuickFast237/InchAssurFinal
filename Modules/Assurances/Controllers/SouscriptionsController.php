@@ -24,8 +24,34 @@ class SouscriptionsController extends ResourceController
      *
      * @return ResponseInterface The HTTP response.
      */
-    public function index()
+    public function index($identifier = null)
     {
+        if ($identifier) {
+            $identifier = $this->getIdentifier($identifier, 'id');
+            $utilisateur = model("UtilisateursModel")->where($identifier['name'], $identifier['value'])->first();
+        } else {
+            $utilisateur = $this->request->utilisateur;
+        }
+        $subscriptions = model("SouscriptionsModel")->where("souscripteur_id", $utilisateur->id)
+            ->where("etat", SouscriptionsEntity::ACTIF)
+            ->findAll();
+        $response = [
+            'status' => 'ok',
+            'message' => count($subscriptions) ? 'Souscriptions trouvées.' : 'Aucune souscription trouvée.',
+            'data' => $subscriptions ?? [],
+        ];
+        return $this->sendResponse($response);
+    }
+
+    public function allSubscriptions()
+    {
+        if (!auth()->user()->inGroup('administrateur')) {
+            $response = [
+                'statut' => 'no',
+                'message' => 'Action non authorisée pour ce profil.',
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+        }
         $subscriptions = model("SouscriptionsModel")->findAll();
         $response = [
             'status' => 'ok',
@@ -683,6 +709,120 @@ class SouscriptionsController extends ResourceController
             'data' => $souscription,
         ];
         return $this->sendResponse($response);
+    }
+
+    public function codeSignature()
+    {
+        /*
+            On genere une chaine aléatoire,
+            On envoie l'email,
+            On retourne la réponse
+        */
+        $code  = strtoupper(random_string('alnum', 8));
+        // $code2 = password_hash(base64_encode(hash('sha256', $code, true)), PASSWORD_DEFAULT);
+        $code2 = password_hash($code, PASSWORD_DEFAULT);
+        // On stocke dans la bd
+        $signatureModel = model("SignaturesModel");
+        $signatureModel->where('email', $this->request->utilisateur->email)->delete();
+        $signatureModel->insert(['email' => $this->request->utilisateur->email, 'code' => $code2]);
+
+        // envoie de l'email
+        if ($this->sendSignatureEmail($this->request->utilisateur->email, $code)) {
+            $response = [
+                'statut'  => 'ok',
+                'message' => 'Un code de signature a été envoyé dans votre boite mail.',
+            ];
+            return $this->sendResponse($response);
+        } else {
+            $response = [
+                'statut'  => 'no',
+                'message' => 'Essayez à nouveau.',
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private function sendSignatureEmail($recipient, $code)
+    {
+        $email = emailer()->setFrom(setting('Email.fromEmail'), setting('Email.fromName') ?? '');
+        $email->setTo($recipient);
+        $email->setCC(['ibikivan1@gmail.com', 'tonbongkevin@gmail.com']);
+        $email->setSubject('Code Signature');
+        $email->setMessage(view(
+            setting('Notify.views')['signature_email'],
+            [
+                'date' => \CodeIgniter\I18n\Time::now()->toDateTimeString(),
+                'code' => $code,
+            ]
+        ));
+        $tentative = 0;
+        while ($tentative < 3) {
+            try {
+                $email->send();
+                break;
+            } catch (\Exception $e) {
+                log_message('warning', $e->getMessage());
+            }
+            $tentative++;
+        }
+        return true;
+    }
+
+    public function decodeSignature()
+    {
+        /*
+            on vérifie que la session contienne bien le code reçu en post et on renvoie la réponse
+        */
+        $rules = [
+            'code'   => [
+                'rules'       => 'required',
+                'errors'      => ['required' => "Le code de signature est requis"]
+            ],
+        ];
+
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception();
+            }
+        } catch (\Throwable $th) {
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $response = [
+                'statut'  => 'no',
+                'message' => "Impossible d'identifier le code de signature.",
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
+
+        $input = $this->getRequestInput($this->request);
+
+        // On recupere le code dans la bd
+        $signatureModel = model("SignaturesModel");
+        $signature = $signatureModel->where('email', $this->request->utilisateur->email)->first();
+
+        if (!$signature) {
+            $response = [
+                'statut'  => 'no',
+                'message' => 'Veuillez générer la signature à nouveau.',
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_LOCKED);
+        }
+        // if (password_verify(base64_encode(hash('sha256', $input['code'], true)), $code)) {
+        if (password_verify($input['code'], $signature->code)) {
+            $signatureModel->where('id', $signature->id)->delete();
+            $response = [
+                'statut'  => 'ok',
+                'message' => 'Signature Correcte.',
+            ];
+            return $this->sendResponse($response);
+        } else {
+            $response = [
+                'statut'  => 'no',
+                'message' => 'Signature incorrect.',
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+        }
     }
 
     /* Après réflexion, pas vraiment utile

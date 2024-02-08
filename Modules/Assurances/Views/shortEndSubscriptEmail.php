@@ -25,7 +25,7 @@
 </html>
 
 
-otherMsg: Félicitation vous avez déjà payé [...frs]. Vous etes en bonne progression pour finaliser la transaction [code transaction]
+<!-- otherMsg: Félicitation vous avez déjà payé [...frs]. Vous etes en bonne progression pour finaliser la transaction [code transaction]
 Votre objectif est de [...frs] avant la date du [.. date] (n jours).
 passez une agréable journée.
 
@@ -33,4 +33,4 @@ Cher abonné,
 À travers ce rappel, Nous sommes ravi de pouvoir vous aider dans votre planification.
 N'oubliez pas
 l'échéance de paiement pour la transaction [code] est prévue pour demain.
-passez une agréable journée.
+passez une agréable journée. -->

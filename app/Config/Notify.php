@@ -19,5 +19,6 @@ class Notify extends BaseConfig
         'suscription_early_ended_email'   => 'Modules\Assurances\Views\shortEndSubscriptEmail',
         'paiement_remember_email'         => 'Modules\Assurances\Views\rememberPaiementEmail',
         'paiement_suggest_email'          => 'Modules\Assurances\Views\suggestPaiementEmail',
+        'signature_email'                 => 'Modules\Assurances\Views\signatureEmail',
     ];
 }
