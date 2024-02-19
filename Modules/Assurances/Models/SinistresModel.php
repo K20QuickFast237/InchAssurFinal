@@ -1,19 +1,20 @@
 <?php
 
-namespace App\Models;
+namespace Modules\Assurances\Models;
 
 use CodeIgniter\Model;
+use Modules\Assurances\Entities\SinistresEntity;
 
 class SinistresModel extends Model
 {
     protected $table            = 'sinistres';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
-    protected $returnType       = 'array';
+    protected $returnType       = SinistresEntity::class;
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        "code", "titre", "description", "statut", "auteur_id", "type_id ", "souscription_id", "conversation_id"
+        "code", "titre", "description", "etat", "auteur_id", "type_id", "souscription_id", "conversation_id"
     ];
 
     // Dates

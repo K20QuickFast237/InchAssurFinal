@@ -25,13 +25,14 @@ class LinkCaster extends BaseCast
      * @param string $text The text to check.
      * @return bool Returns true if the text is a valid link, false otherwise.
      */
-    private static function isLink($text)
+    private static function isLink($url)
     {
-        // Regular expression to match URLs
+        // Regular expression to match URLs (Got problems with)
         $pattern = '/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/';
 
         // Check if the text matches the pattern
-        if (preg_match($pattern, $text)) {
+        // if (preg_match($pattern, $url)) {
+        if (filter_var($url, FILTER_VALIDATE_URL)) {
             return true;
         } else {
             return false;

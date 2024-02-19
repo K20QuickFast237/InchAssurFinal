@@ -56,6 +56,7 @@ class Autoload extends AutoloadConfig
         'Modules\Utilisateurs' => ROOTPATH . 'Modules/Utilisateurs',
         'Modules\Paiements'    => ROOTPATH . 'Modules/Paiements',
         'Modules\CLI'          => ROOTPATH . 'Modules/CLI',
+        'Modules\Messageries'  => ROOTPATH . 'Modules/Messageries',
         // 'Modules/Image' => ROOTPATH . 'Modules/Image'
     ];
 

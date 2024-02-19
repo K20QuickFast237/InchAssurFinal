@@ -27,4 +27,9 @@ class ImagesModel extends DocumentsModel
     {
         return $this->select("id, uri")->where('id', $id)->first();
     }
+
+    public function getMultiSimplified($ids)
+    {
+        return $this->select("id, uri")->whereIn('id', $ids)->findAll();
+    }
 }

@@ -20,6 +20,7 @@ class SinistreTypes extends Migration
             `statut` tinyint NOT NULL DEFAULT '1' COMMENT 'inactif/actif',
             `catProduit_id` int unsigned NOT NULL COMMENT 'actif/inactif',
             PRIMARY KEY (`id`),
+            UNIQUE KEY `nom_UNIQUE` (`nom`),
             KEY `sinistra_catProd_id_foreign_idx` (`catProduit_id`),
             CONSTRAINT `sinistra_catProd_id_foreign` FOREIGN KEY (`catProduit_id`) REFERENCES `categorie_produits` (`id`)
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;

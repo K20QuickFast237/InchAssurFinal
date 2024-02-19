@@ -16,9 +16,9 @@ class Sinistres extends Migration
         CREATE TABLE `sinistres` (
             `id` int unsigned NOT NULL AUTO_INCREMENT,
             `code` varchar(25) COLLATE utf8mb4_bin NOT NULL,
-            `titre` varchar(150) COLLATE utf8mb4_bin NOT NULL,
+            `sujet` varchar(150) COLLATE utf8mb4_bin NOT NULL,
             `description` text COLLATE utf8mb4_bin NOT NULL,
-            `statut` tinyint NOT NULL DEFAULT '1' COMMENT 'Termine/En cours',
+            `etat` tinyint NOT NULL DEFAULT '1' COMMENT 'Termine/En cours',
             `auteur_id` int unsigned NOT NULL,
             `type_id` int unsigned NOT NULL,
             `souscription_id` int unsigned NOT NULL,

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controllers;
+namespace Modules\Messageries\Controllers;
 
 use App\Controllers\BaseController;
 

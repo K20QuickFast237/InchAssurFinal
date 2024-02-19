@@ -1,16 +1,16 @@
 <?php
 
-namespace Modules\Incidents\Controllers;
+namespace Modules\Assurances\Controllers;
 
 use App\Controllers\BaseController;
+use App\Traits\ControllerUtilsTrait;
 use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\HTTP\ResponseInterface;
-use App\Traits\ControllerUtilsTrait;
 use App\Traits\ErrorsDataTrait;
-use Modules\Incidents\Entities\IncidentsEntity;
+use Modules\Assurances\Entities\SinistresEntity;
 use Modules\Messageries\Entities\ConversationEntity;
 
-class IncidentsController extends BaseController
+class SinistresController extends BaseController
 {
     use ResponseTrait;
     use ControllerUtilsTrait;
@@ -19,7 +19,7 @@ class IncidentsController extends BaseController
     protected $helpers = ['Modules\Documents\Documents', 'Modules\Images\Images', 'text'];
 
     /**
-     * Renvoie tous les incidents actifs de l'utilisateur identifié.
+     * Renvoie tous les sinistres actifs de l'utilisateur identifié.
      *
      * @param  mixed $identifier identifiant ou code de l'utilisateur
      * @return ResponseInterface The HTTP response.
@@ -39,28 +39,28 @@ class IncidentsController extends BaseController
         } else {
             $utilisateur = $this->request->utilisateur;
         }
-        $incidents = model("IncidentsModel")->where("auteur_id", $utilisateur->id)
-            ->where("etat", IncidentsEntity::ACTIF)
+        $sinistres = model("SinistresModel")->where("auteur_id", $utilisateur->id)
+            ->where("etat", SinistresEntity::ACTIF)
             ->findAll();
 
         $response = [
             'status' => 'ok',
-            'message' => count($incidents) ? 'Incidents déclarés.' : 'Aucun incident déclaré.',
+            'message' => count($sinistres) ? 'Sinistres déclarés.' : 'Aucun sinistre déclaré.',
             'data' => $sinistres ?? [],
         ];
         return $this->sendResponse($response);
     }
 
     /**
-     * Renvoie toutes les déclarations d'incidents.
+     * Renvoie toutes les déclarations de sinistres.
      * pour les administrateurs seulement.
      *
      * @param  boolean $active specifie si seuls les déclarations actives doivent être renvoyées
      * @return ResponseInterface The HTTP response.
      */
-    public function getAllIncidents($active = false)
+    public function getAllSinistres($active = false)
     {
-        if (!auth()->user()->can('incidents.viewAll')) {
+        if (!auth()->user()->can('sinistres.viewAll')) {
             $response = [
                 'statut' => 'no',
                 'message' => 'Action non authorisée pour ce profil.',
@@ -68,62 +68,69 @@ class IncidentsController extends BaseController
             return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
         }
         if ($active) {
-            $incidents = model("IncidentsModel")
-                ->where("etat", IncidentsEntity::ACTIF)
+            $sinistres = model("SinistresModel")
+                ->where("etat", SinistresEntity::ACTIF)
                 ->findAll();
         } else {
-            $incidents = model("IncidentsModel")->findAll();
+            $sinistres = model("SinistresModel")->findAll();
         }
 
         $response = [
             'status' => 'ok',
-            'message' => count($incidents) ? 'Incidents trouvés.' : 'Aucun Incident trouvé.',
-            'data' => $incidents ?? [],
+            'message' => count($sinistres) ? 'Sinistres trouvés.' : 'Aucun sinistre trouvé.',
+            'data' => $sinistres ?? [],
         ];
         return $this->sendResponse($response);
     }
 
     /**
-     * Renvoie les détails d'une déclaration de incident
+     * Renvoie les détails d'une déclaration de sinistre
      *
-     * @param  mixed $id identifiant où code de la déclaration d'incident
+     * @param  mixed $id identifiant où code de la déclaration de sinistre
      * @return ResponseInterface The HTTP response.
      */
     public function show($id = null)
     {
         $identifier = $this->getIdentifier($id, 'id');
-        $incident   = model("IncidentsModel")->where($identifier['name'], $identifier['value'])->first();
-        $incident->images;
+        $sinistre   = model("SinistresModel")->where($identifier['name'], $identifier['value'])->first();
+        $sinistre->images;
+        $sinistre->documents;
         $response   = [
             'statut'  => 'ok',
-            'message' => $incident ? "Détails de l'incident." : "Impossible de trouver les détails de cette déclaration d'incident.",
-            'data'    => $incident ?? [],
+            'message' => $sinistre ? 'Détails du sinistre.' : "Impossible de trouver les détails de ce sinistre.",
+            'data'    => $sinistre ?? [],
         ];
         return $this->sendResponse($response);
     }
 
     /**
-     * Ajoute une déclaration d'incident
+     * Ajoute une déclaration de sinistre
      *
      * @return ResponseInterface The HTTP response.
      */
     public function create($declarant = null)
     {
         /*
-            L'incident est un disfonctionnements ou bugs rencontrés sur la plateforme et
-            ayant eu des répercussions sur le compte utilisateur.
-            Déclarer un incident reviens à faire une descriptoin des circonstances
-            et au besoin y joindre des images (captures d'écran) justificatives.
+            Le sinistre est un incicdent malheureux couvert par l'assurance.
+            Déclarer un sinistre reviens à faire une descriptoin des faits
+            et au besoin y joindre des documents et images justificatifs.
             Aussi, cette déclaration ouvre une conversation.
         */
         $rules = [
             'sujet'          => ['rules' => 'required', 'errors' => ['required' => 'Le sujet est obligatoire']],
             'description'    => ['rules' => 'required', 'errors' => ['required' => 'La description est obligatoire']],
-            'idTypeIncident' => [
-                'rules'   => 'required|is_not_unique[incident_types.id]',
+            'idTypeSinistre' => [
+                'rules'   => 'required|is_not_unique[sinistre_types.id]',
                 'errors'  => [
                     'required' => 'Le type est obligatoire.',
                     'is_not_unique' => "Le type spécifié n'est pas reconnu.",
+                ]
+            ],
+            'idSouscription' => [
+                'rules'      => 'required|is_not_unique[souscriptions.id]',
+                'errors'     => [
+                    'integer' => "La souscription spécifiée n'est pas reconnue.",
+                    'is_not_unique' => "La souscription spécifiée n'est pas reconnue.",
                 ]
             ],
         ];
@@ -159,49 +166,57 @@ class IncidentsController extends BaseController
 
         $input = $this->getRequestInput($this->request);
         // Ouverture de la conversation ou réutilisation
-        $codeIncident = $this->generateCodeIncident();
+        $codeSinistre = $this->generateCodeSinistre();
         $conversationInfo = [
-            "nom"     => "Reclamations-$codeIncident",
-            "description" => "Échanges pour la résolution de l'incident $codeIncident",
-            "type_id" => ConversationEntity::TYPE_INCIDENT,
+            "nom"     => "Reclamations-$codeSinistre",
+            "description" => "Échanges pour la résolution du sinistre $codeSinistre",
+            "type_id" => ConversationEntity::TYPE_SINISTRE,
         ];
-        model("IncidentsModel")->db->transBegin();
+        model("SinistresModel")->db->transBegin();
         $convId = model("ConversationsModel")->insert($conversationInfo);
 
-        $incidentInfo = [
-            "code"  => $codeIncident,
+        $sinistreInfo = [
+            "code"  => $codeSinistre,
             "titre" => $input['sujet'],
             "description" => $input['description'],
             "auteur_id" => $declarant->id,
-            "type_id" => (int)$input["idTypeIncident"],
+            "type_id" => (int)$input["idTypeSinistre"],
+            "souscription_id" => $input["idSouscription"],
             "conversation_id" => $convId,
         ];
-        $incidentId = model("IncidentsModel")->insert($incidentInfo);
-        model("IncidentsModel")->db->transCommit();
+        $sinistreId = model("SinistresModel")->insert($sinistreInfo);
+        model("SinistresModel")->db->transCommit();
 
         // Enregistrer les fichiers joints au cas échéant
         // $images    = $this->request->getFiles("images");
         // $documents = $this->request->getFiles("documents");
         $files     = $this->request->getFiles();
         $images    = $files["images"] ?? [];
+        $documents = $files["documents"] ?? [];
         foreach ($images as $img) {
             $imgID = saveImage($img, 'uploads/sinistres/images/');
-            model("SinistreImagesModel")->insert(["sinistre_id" => $incidentId, "image_id" => $imgID]);
+            model("SinistreImagesModel")->insert(["sinistre_id" => $sinistreId, "image_id" => $imgID]);
+        }
+
+        foreach ($documents as $doc) {
+            $title = $doc->getClientName();
+            $docID = saveDocument($title, $doc, 'uploads/sinistres/documents/');
+            model("SinistreDocumentsModel")->insert(["sinistre_id" => $sinistreId, "document_id" => $docID]);
         }
 
         $response = [
             'statut'  => 'ok',
             'message' => 'Déclaration Enregistrée.',
-            'data'    => ["idIncident" => $incidentId],
+            'data'    => ["idSinistre" => $sinistreId],
         ];
         return $this->sendResponse($response, ResponseInterface::HTTP_CREATED);
     }
 
-    private function generateCodeIncident()
+    private function generateCodeSinistre()
     {
-        $maxId = model("IncidentsModel")->orderBy("id", "DESC")->findColumn("id")[0] ?? 0;
+        $maxId = model("SinistresModel")->orderBy("id", "DESC")->findColumn("id")[0] ?? 0;
         $num   = str_pad($maxId + 1, 5, "0", STR_PAD_LEFT);
-        return "I" . substr(date('Y'), 2) . $num;
+        return "S" . substr(date('Y'), 2) . $num;
     }
 
     /**
@@ -215,8 +230,8 @@ class IncidentsController extends BaseController
         $rules = [
             'sujet'          => 'if_exist',
             'description'    => 'if_exist',
-            'idTypeIncident' => [
-                'rules'   => 'if_exist|is_not_unique[incident_types.id]',
+            'idTypeSinistre' => [
+                'rules'   => 'if_exist|is_not_unique[sinistre_types.id]',
                 'errors'  => ['is_not_unique' => "Le type spécifié n'est pas reconnu.",]
             ],
         ];
@@ -230,7 +245,7 @@ class IncidentsController extends BaseController
             $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;
             $response = [
                 'statut'  => 'no',
-                'message' => $validationError ? $errorsData['errors'] : "Impossible de mettre à jour cette déclaration d'incident.",
+                'message' => $validationError ? $errorsData['errors'] : "Impossible de mettre à jour ce sinistre.",
                 'errors'  => $errorsData['errors'],
             ];
             return $this->sendResponse($response, $errorsData['code']);
@@ -239,39 +254,40 @@ class IncidentsController extends BaseController
         $input = $this->getRequestInput($this->request);
 
         // Ouverture de la conversation ou réutilisation
-        $incidentInfo = [
+        $sinistreInfo = [
             "titre" => $input['sujet'] ?? null,
             "description" => $input['description'] ?? null,
-            "type_id" => (int)$input["idTypeIncident"] ?? null,
+            "type_id" => (int)$input["idTypeSinistre"] ?? null,
         ];
-        model("IncidentsModel")->update($id, array_filter($incidentInfo));
+        model("SinistresModel")->update($id, array_filter($sinistreInfo));
 
         $response = [
             'statut'  => 'ok',
-            'message' => "Déclaration d'incident mise à jour.",
+            'message' => 'Déclaration de sinistre Mise à jour.',
         ];
         return $this->sendResponse($response);
     }
 
     /**
-     * Supprimme la déclaration d'incident identifiée
+     * Supprimme la déclaration de sinistre identifiée
      *
      * @param  mixed $id identifiant où code de la déclaration de sinistre
      * @return ResponseInterface The HTTP response.
      */
     public function delete($id = null)
     {
-        model("IncidentsModel")->delete($id);
-        model("IncidentImagesModel")->where('incident_id', $id)->delete();
+        model("SinistresModel")->delete($id);
+        model("SinistreImagesModel")->where('sinistre_id', $id)->delete();
+        model("SinistreDocumentsModel")->where('sinistre_id', $id)->delete();
 
         $response = [
             'statut'  => 'ok',
-            'message' => "Déclaration d'incident Supprimée.",
+            'message' => 'Déclaration de sinistre Supprimée.',
         ];
         return $this->sendResponse($response);
     }
 
-    public function setIncidentImages($id)
+    public function setSinistreImages($id)
     {
         $rules = [
             'url' => "if_exist",
@@ -289,13 +305,13 @@ class IncidentsController extends BaseController
             }
             if ($images) {
                 foreach ($images['images'] as $img) {
-                    $imgID = saveImage($img, 'uploads/incidents/images/');
-                    model("IncidentImagesModel")->insert(["incident_id" => $id, "image_id" => $imgID]);
+                    $imgID = saveImage($img, 'uploads/sinistres/images/');
+                    model("SinistreImagesModel")->insert(["sinistre_id" => $id, "image_id" => $imgID]);
                 }
             }
             if (isset($input['url'])) {
                 $imgID = model("ImagesModel")->insert(["uri" => $input["url"], "isLink" => true]);
-                model("IncidentImagesModel")->insert(["incident_id" => $id, "image_id" => $imgID]);
+                model("SinistreImagesModel")->insert(["sinistre_id" => $id, "image_id" => $imgID]);
             }
         } catch (\Throwable $th) {
             $errorsData = $this->getErrorsData($th, isset($hasError));
@@ -310,118 +326,118 @@ class IncidentsController extends BaseController
 
         $response = [
             'statut'  => 'ok',
-            'message' => "Image ajoutée à la déclaration d'incident.",
+            'message' => "Image ajoutée à la déclaration de sinistre.",
             'data'    => [],
         ];
         return $this->sendResponse($response);
     }
 
     /**
-     * Retrieve the Images of the identified incident declaration
+     * Retrieve the Images of the identified sinstre declaration
      *
      * @param  mixed $id
      * @return ResponseInterface The HTTP response.
      */
-    public function getIncidentImages($id)
+    public function getSinistreImages($id)
     {
         $identifier = $this->getIdentifier($id, 'id');
-        $incident   = model("IncidentsModel")->where($identifier['name'], $identifier['value'])->first();
-        $data       = $incident->images;
+        $sinistre  = model("SinistresModel")->where($identifier['name'], $identifier['value'])->first();
+        $data       = $sinistre->images;
 
         $response = [
             'statut'  => 'ok',
-            'message' => $data ? "Images de la déclaration d'incident." : "Aucune image pour cette déclaration d'incident.",
+            'message' => $data ? "Images de la déclaration de sinistre." : "Aucune image pour cette déclaration de sinistre.",
             'data'    => $data,
         ];
         return $this->sendResponse($response);
     }
 
-    public function delIncidentImage($id, $imgId)
+    public function delSinistreImage($id, $imgId)
     {
-        model("IncidentImagesModel")->where('incident_id', $id)->where("image_id", $imgId)->delete();
+        model("SinistreImagesModel")->where('sinistre_id', $id)->where("image_id", $imgId)->delete();
 
         $response = [
             'statut'  => 'ok',
-            'message' => "Image de déclaration d'incident Supprimée.",
+            'message' => 'Image de sinistre Supprimée.',
         ];
         return $this->sendResponse($response);
     }
 
-    // /**
-    //  * Retrieve the Documents provided for the identified sinistre declaration
-    //  *
-    //  * @param  mixed $id
-    //  * @return ResponseInterface The HTTP response.
-    //  */
-    // public function getSinistreDocuments($id)
-    // {
-    //     $identifier = $this->getIdentifier($id, 'id');
-    //     $sinistre   = model("SinistresModel")->where($identifier['name'], $identifier['value'])->first();
-    //     $data       = $sinistre->documents;
+    /**
+     * Retrieve the Documents provided for the identified sinistre declaration
+     *
+     * @param  mixed $id
+     * @return ResponseInterface The HTTP response.
+     */
+    public function getSinistreDocuments($id)
+    {
+        $identifier = $this->getIdentifier($id, 'id');
+        $sinistre   = model("SinistresModel")->where($identifier['name'], $identifier['value'])->first();
+        $data       = $sinistre->documents;
 
-    //     $response = [
-    //         'statut'  => 'ok',
-    //         'message' => $data ? "Document(s) joint(s) à la déclaration de sinistre." : "Aucun document join à cette déclaration de sinistre.",
-    //         'data'    => $data,
-    //     ];
-    //     return $this->sendResponse($response);
-    // }
+        $response = [
+            'statut'  => 'ok',
+            'message' => $data ? "Document(s) joint(s) à la déclaration de sinistre." : "Aucun document join à cette déclaration de sinistre.",
+            'data'    => $data,
+        ];
+        return $this->sendResponse($response);
+    }
 
-    // public function setSinistreDocument($id)
-    // {
-    //     $rules = [
-    //         'titre'    => ['rules' => 'required', 'errors' => ['required' => "Un titre est nécessaire pour enregistrer le document."]],
-    //         'url'      => 'if_exist',
-    //         'document' => 'if_exist|uploaded[document]',
-    //     ];
-    //     $input    = $this->getRequestInput($this->request);
-    //     $document = $this->request->getFile('document');
+    public function setSinistreDocument($id)
+    {
+        $rules = [
+            'titre'    => ['rules' => 'required', 'errors' => ['required' => "Un titre est nécessaire pour enregistrer le document."]],
+            'url'      => 'if_exist',
+            'document' => 'if_exist|uploaded[document]',
+        ];
+        $input    = $this->getRequestInput($this->request);
+        $document = $this->request->getFile('document');
 
-    //     $model = model("SinistreDocumentsModel");
-    //     try {
-    //         if (!$this->validate($rules)) {
-    //             $hasError = true;
-    //             throw new \Exception();
-    //         }
-    //         $model->db->transBegin();
-    //         if (isset($input['url'])) {
-    //             $docID = model("DocumentsModel")->insert([
-    //                 "titre" => $input['titre'],
-    //                 "uri"   => $input['url'],
-    //                 "isLink" => true,
-    //             ]);
-    //         } elseif ($document) {
-    //             $docID = saveDocument($input['titre'], $document, 'uploads/Sinistres/documents/');
-    //         }
-    //         $model->insert(["sinistre_id" => (int)$id, "document_id" => $docID]);
+        $model = model("SinistreDocumentsModel");
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception();
+            }
+            $model->db->transBegin();
+            if (isset($input['url'])) {
+                $docID = model("DocumentsModel")->insert([
+                    "titre" => $input['titre'],
+                    "uri"   => $input['url'],
+                    "isLink" => true,
+                ]);
+            } elseif ($document) {
+                $docID = saveDocument($input['titre'], $document, 'uploads/Sinistres/documents/');
+            }
+            $model->insert(["sinistre_id" => (int)$id, "document_id" => $docID]);
 
-    //         $model->db->transCommit();
-    //         $response = [
-    //             'statut'  => 'ok',
-    //             'message' => "Document(s) associé(s) au sinistre.",
-    //             'data'    => [],
-    //         ];
-    //         return $this->sendResponse($response);
-    //     } catch (\Throwable $th) {
-    //         $model->db->transRollback();
-    //         $errorsData = $this->getErrorsData($th, isset($hasError));
-    //         $response = [
-    //             'statut'  => 'no',
-    //             'message' => "Impossible d'associer ce(s) document(s) à la déclaratrion de sinistre.",
-    //             'errors'  => $errorsData['errors'],
-    //         ];
-    //         return $this->sendResponse($response, $errorsData['code']);
-    //     }
-    // }
+            $model->db->transCommit();
+            $response = [
+                'statut'  => 'ok',
+                'message' => "Document(s) associé(s) au sinistre.",
+                'data'    => [],
+            ];
+            return $this->sendResponse($response);
+        } catch (\Throwable $th) {
+            $model->db->transRollback();
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $response = [
+                'statut'  => 'no',
+                'message' => "Impossible d'associer ce(s) document(s) à la déclaratrion de sinistre.",
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
+    }
 
-    // public function delSinistreDocument($id, $docId)
-    // {
-    //     model("SinistreDocumentsModel")->where('sinistre_id', $id)->where("document_id", $docId)->delete();
+    public function delSinistreDocument($id, $docId)
+    {
+        model("SinistreDocumentsModel")->where('sinistre_id', $id)->where("document_id", $docId)->delete();
 
-    //     $response = [
-    //         'statut'  => 'ok',
-    //         'message' => 'Document de sinistre Supprimée.',
-    //     ];
-    //     return $this->sendResponse($response);
-    // }
+        $response = [
+            'statut'  => 'ok',
+            'message' => 'Document de sinistre Supprimée.',
+        ];
+        return $this->sendResponse($response);
+    }
 }

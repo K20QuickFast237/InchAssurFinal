@@ -834,7 +834,7 @@ class AssurancesController extends ResourceController
     }
 
     /**
-     * Retrieve the Documentation provided by the identified assurance
+     * Retrieve the Images of the identified assurance
      *
      * @param  mixed $id
      * @return ResponseInterface The HTTP response.

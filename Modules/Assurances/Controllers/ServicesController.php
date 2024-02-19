@@ -12,7 +12,7 @@ use Modules\Assurances\Entities\ServicesEntity;
 class ServicesController extends ResourceController
 {
     use ControllerUtilsTrait;
-    use ResponseTrait;
+    // use ResponseTrait;
     use ErrorsDataTrait;
 
     /**
