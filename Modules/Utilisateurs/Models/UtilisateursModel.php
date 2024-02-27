@@ -50,6 +50,11 @@ class UtilisateursModel extends Model
         return $this->select("id, code, nom, prenom, photo_profil")->where('id', $id)->first();
     }
 
+    public function getBulkSimplified(array $ids)
+    {
+        return $this->select("id, code, nom, prenom, photo_profil")->whereIn('id', $ids)->findAll();
+    }
+
     public function getSimplifiedArray(int $id)
     {
         $data = $this->join("images", "utilisateurs.photo_profil = images.id")
@@ -61,13 +66,28 @@ class UtilisateursModel extends Model
             "prenom" => $data['prenom'],
             "photoProfil" => [
                 "idImage" => $data['id'],
-                "url" => $data['isLink'] ? $data['isLink'] : base_url($data['uri'])
+                "url" => $data['isLink'] ? $data['uri'] : base_url($data['uri'])
             ],
         ];
     }
 
-    public function getBulkSimplified(array $ids)
+    public function getBulkSimplifiedArray(array $ids)
     {
-        return $this->select("id, code, nom, prenom, photo_profil")->whereIn('id', $ids)->findAll();
+        $data = $this->join("images", "utilisateurs.photo_profil = images.id")
+            ->select('*, images.id as idImage, utilisateurs.id as idUtilisateur')
+            ->asArray()->whereIn('utilisateurs.id', $ids)->findAll();
+        $data = array_map(function ($e) {
+            return [
+                "idUtilisateur" => $e['idUtilisateur'],
+                "code" => $e['code'],
+                "nom"  => $e['nom'],
+                "prenom" => $e['prenom'],
+                "photoProfil" => [
+                    "idImage" => $e['idImage'],
+                    "url" => $e['isLink'] ? $e['uri'] : base_url($e['uri'])
+                ],
+            ];
+        }, $data);
+        return $data;
     }
 }

@@ -3,16 +3,17 @@
 namespace Modules\Messageries\Models;
 
 use CodeIgniter\Model;
+use Modules\Messageries\Entities\ConversationEntity;
 
 class ConversationsModel extends Model
 {
     protected $table            = 'conversations';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
-    protected $returnType       = 'array';
+    protected $returnType       = ConversationEntity::class;
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ["nom", "description", "image_id", "type_id", "etat", "origin"];
+    protected $allowedFields    = ["nom", "description", "image_id", "type", "etat", "origin"];
 
     // Dates
     protected $useTimestamps = false;

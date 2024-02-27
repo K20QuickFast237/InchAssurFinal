@@ -3,11 +3,28 @@
 namespace Modules\Utilisateurs\Config;
 
 //------------ utilisateurs ---------------------------
+
+//------------ Users ---------------------------
+$routes->group('/users', ['namespace' => 'Modules\Utilisateurs\Controllers'], static function ($routes) {
+    $routes->get('testes',                    'UtilisateursController::test');
+    $routes->get('dashboard',                 'UtilisateursController::dashboardInfos');
+    $routes->post('defaultProfil',            'UtilisateursController::setDefaultProfil');
+    $routes->post('souscriptions',            'UtilisateursController::getSouscriptions');
+    $routes->post('infos',                    'UtilisateursController::update');
+    $routes->post('(:segment)/souscriptions', 'UtilisateursController::getSouscriptions/$1');
+    $routes->get('(:segment)/pocket',         'PortefeuillesController::getUserPocket/$1');
+    $routes->get('(:segment)/membres',        'UtilisateursController::getMember/$1');
+    $routes->post('(:segment)/membres',       'UtilisateursController::addMember/$1');
+    $routes->post('(:segment)/profil',        'UtilisateursController::addprofil/$1');
+    $routes->post('(:segment)/defaultProfil', 'UtilisateursController::setDefaultProfil/$1');
+});
 /** @todo Ajouter la gestion des accès sur la ressource membres  */
-$routes->resource('utilisateurs', [
+// $routes->resource('utilisateurs', [
+$routes->post('users/(:segment)', '\Modules\Utilisateurs\Controllers\utilisateursController::update/$1');
+$routes->resource('users', [
     'controller' => '\Modules\Utilisateurs\Controllers\utilisateursController',
     'placeholder' => '(:segment)',
-    'except' => 'new,edit',
+    'except' => 'new,edit,create',
 ]);
 $routes->post('membres', '\Modules\Utilisateurs\Controllers\UtilisateursController::addMember');
 
@@ -19,20 +36,6 @@ $routes->get('pocket', '\Modules\Utilisateurs\Controllers\PortefeuillesControlle
 $routes->post('membres', '\Modules\Utilisateurs\Controllers\UtilisateursController::addMember');
 $routes->get('membres', '\Modules\Utilisateurs\Controllers\UtilisateursController::getMember');
 
-
-//------------ Users ---------------------------
-$routes->group('/users', ['namespace' => 'Modules\Utilisateurs\Controllers'], static function ($routes) {
-    $routes->get('testes',                    'UtilisateursController::test');
-    $routes->get('dashboard',                 'UtilisateursController::dashboardInfos');
-    $routes->post('defaultProfil',            'UtilisateursController::setDefaultProfil');
-    $routes->post('souscriptions',            'UtilisateursController::getSouscriptions');
-    $routes->post('(:segment)/souscriptions', 'UtilisateursController::getSouscriptions/$1');
-    $routes->get('(:segment)/pocket',         'PortefeuillesController::getUserPocket/$1');
-    $routes->get('(:segment)/membres',        'UtilisateursController::getMember/$1');
-    $routes->post('(:segment)/membres',       'UtilisateursController::addMember/$1');
-    $routes->post('(:segment)/profil',        'UtilisateursController::addprofil/$1');
-    $routes->post('(:segment)/defaultProfil', 'UtilisateursController::setDefaultProfil/$1');
-});
 
 //------------ PorteFeuilles ---------------------------
 $routes->resource('pockets', [

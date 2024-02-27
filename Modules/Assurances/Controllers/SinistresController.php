@@ -9,6 +9,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use App\Traits\ErrorsDataTrait;
 use Modules\Assurances\Entities\SinistresEntity;
 use Modules\Messageries\Entities\ConversationEntity;
+use CodeIgniter\Database\Exceptions\DataException;
 
 class SinistresController extends BaseController
 {
@@ -170,10 +171,15 @@ class SinistresController extends BaseController
         $conversationInfo = [
             "nom"     => "Reclamations-$codeSinistre",
             "description" => "Échanges pour la résolution du sinistre $codeSinistre",
-            "type_id" => ConversationEntity::TYPE_SINISTRE,
+            "type" => ConversationEntity::TYPE_SINISTRE,
         ];
         model("SinistresModel")->db->transBegin();
         $convId = model("ConversationsModel")->insert($conversationInfo);
+        model("ConversationMembresModel")->insert([
+            "conversation_id" => $convId,
+            "membre_id" => $declarant->id,
+            "isAdmin" => false
+        ]);
 
         $sinistreInfo = [
             "code"  => $codeSinistre,
@@ -240,6 +246,22 @@ class SinistresController extends BaseController
                 $hasError = true;
                 throw new \Exception("Veuillez corriger les erreurs suivantes: " . $this->validator->getErrors());
             }
+
+            $input = $this->getRequestInput($this->request);
+
+            // Ouverture de la conversation ou réutilisation
+            $sinistreInfo = [
+                "titre" => $input['sujet'] ?? null,
+                "description" => $input['description'] ?? null,
+                "type_id" => (int)$input["idTypeSinistre"] ?? null,
+            ];
+            model("SinistresModel")->update($id, array_filter($sinistreInfo));
+        } catch (DataException $de) {
+            $response = [
+                'statut'  => 'ok',
+                'message' => "Aucune modification apportée.",
+            ];
+            return $this->sendResponse($response);
         } catch (\Throwable $th) {
             $errorsData = $this->getErrorsData($th, isset($hasError));
             $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;
@@ -250,16 +272,6 @@ class SinistresController extends BaseController
             ];
             return $this->sendResponse($response, $errorsData['code']);
         }
-
-        $input = $this->getRequestInput($this->request);
-
-        // Ouverture de la conversation ou réutilisation
-        $sinistreInfo = [
-            "titre" => $input['sujet'] ?? null,
-            "description" => $input['description'] ?? null,
-            "type_id" => (int)$input["idTypeSinistre"] ?? null,
-        ];
-        model("SinistresModel")->update($id, array_filter($sinistreInfo));
 
         $response = [
             'statut'  => 'ok',
@@ -276,9 +288,12 @@ class SinistresController extends BaseController
      */
     public function delete($id = null)
     {
+        $sinistre = model("SinistresModel")->find($id);
         model("SinistresModel")->delete($id);
         model("SinistreImagesModel")->where('sinistre_id', $id)->delete();
         model("SinistreDocumentsModel")->where('sinistre_id', $id)->delete();
+        $convName = 'Reclamations-' . $sinistre->code;
+        model("ConversationsModel")->where('nom', $convName)->delete();
 
         $response = [
             'statut'  => 'ok',

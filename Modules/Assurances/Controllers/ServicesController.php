@@ -8,6 +8,7 @@ use CodeIgniter\RESTful\ResourceController;
 use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\HTTP\ResponseInterface;
 use Modules\Assurances\Entities\ServicesEntity;
+use CodeIgniter\Database\Exceptions\DataException;
 
 class ServicesController extends ResourceController
 {
@@ -132,6 +133,12 @@ class ServicesController extends ResourceController
             }
             $identifier = $this->getIdentifier($id, 'id');
             model("ServicesModel")->update($identifier['value'], new ServicesEntity($input));
+        } catch (DataException $de) {
+            $response = [
+                'statut'  => 'ok',
+                'message' => "Aucune modification apportée.",
+            ];
+            return $this->sendResponse($response);
         } catch (\Throwable $th) {
             $errorsData = $this->getErrorsData($th, isset($hasError));
             $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;

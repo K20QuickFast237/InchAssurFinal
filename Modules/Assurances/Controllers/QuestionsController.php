@@ -9,6 +9,7 @@ use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\HTTP\ResponseInterface;
 use Modules\Assurances\Entities\QuestionOptionsEntity;
 use Modules\Assurances\Entities\QuestionsEntity;
+use CodeIgniter\Database\Exceptions\DataException;
 
 class QuestionsController extends ResourceController
 {
@@ -271,6 +272,12 @@ class QuestionsController extends ResourceController
             }
 
             model("QuestionsModel")->update($id, new QuestionsEntity($input));
+        } catch (DataException $de) {
+            $response = [
+                'statut'  => 'ok',
+                'message' => "Aucune modification apportée.",
+            ];
+            return $this->sendResponse($response);
         } catch (\Throwable $th) {
             $errorsData = $this->getErrorsData($th, isset($hasError));
             $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;

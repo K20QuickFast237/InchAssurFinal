@@ -1,18 +1,19 @@
 <?php
 
-namespace App\Models;
+namespace Modules\Incidents\Models;
 
 use CodeIgniter\Model;
+use Modules\Incidents\Entities\IncidentsEntity;
 
 class IncidentsModel extends Model
 {
     protected $table            = 'incidents';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
-    protected $returnType       = 'array';
+    protected $returnType       = IncidentsEntity::class;
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ["code", "titre", "description", "statut", "type_id", "auteur_id", "conversation_id"];
+    protected $allowedFields    = ["code", "titre", "description", "etat", "type_id", "auteur_id", "conversation_id"];
 
     // Dates
     protected $useTimestamps = false;

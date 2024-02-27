@@ -9,6 +9,7 @@ use App\Traits\ControllerUtilsTrait;
 use App\Traits\ErrorsDataTrait;
 use Modules\Incidents\Entities\IncidentsEntity;
 use Modules\Messageries\Entities\ConversationEntity;
+use CodeIgniter\Database\Exceptions\DataException;
 
 class IncidentsController extends BaseController
 {
@@ -163,10 +164,11 @@ class IncidentsController extends BaseController
         $conversationInfo = [
             "nom"     => "Reclamations-$codeIncident",
             "description" => "Échanges pour la résolution de l'incident $codeIncident",
-            "type_id" => ConversationEntity::TYPE_INCIDENT,
+            "type" => ConversationEntity::TYPE_INCIDENT,
         ];
         model("IncidentsModel")->db->transBegin();
         $convId = model("ConversationsModel")->insert($conversationInfo);
+        model("ConversationMembresModel")->insert(["conversation_id" => $convId, "membre_id" => $declarant->id, "isAdmin" => false]);
 
         $incidentInfo = [
             "code"  => $codeIncident,
@@ -185,8 +187,8 @@ class IncidentsController extends BaseController
         $files     = $this->request->getFiles();
         $images    = $files["images"] ?? [];
         foreach ($images as $img) {
-            $imgID = saveImage($img, 'uploads/sinistres/images/');
-            model("SinistreImagesModel")->insert(["sinistre_id" => $incidentId, "image_id" => $imgID]);
+            $imgID = saveImage($img, 'uploads/incidents/images/');
+            model("IncidentImagesModel")->insert(["incident_id" => $incidentId, "image_id" => $imgID]);
         }
 
         $response = [
@@ -225,6 +227,12 @@ class IncidentsController extends BaseController
                 $hasError = true;
                 throw new \Exception("Veuillez corriger les erreurs suivantes: " . $this->validator->getErrors());
             }
+        } catch (DataException $de) {
+            $response = [
+                'statut'  => 'ok',
+                'message' => "Aucune modification apportée.",
+            ];
+            return $this->sendResponse($response);
         } catch (\Throwable $th) {
             $errorsData = $this->getErrorsData($th, isset($hasError));
             $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;
@@ -261,8 +269,11 @@ class IncidentsController extends BaseController
      */
     public function delete($id = null)
     {
+        $incident = model("IncidentsModel")->find($id);
         model("IncidentsModel")->delete($id);
         model("IncidentImagesModel")->where('incident_id', $id)->delete();
+        $convName = 'Reclamations-' . $incident->code;
+        model("ConversationsModel")->where('nom', $convName)->delete();
 
         $response = [
             'statut'  => 'ok',

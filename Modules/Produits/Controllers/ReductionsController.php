@@ -8,6 +8,7 @@ use CodeIgniter\RESTful\ResourceController;
 use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\HTTP\ResponseInterface;
 use Modules\Produits\Entities\ReductionsEntity;
+use CodeIgniter\Database\Exceptions\DataException;
 
 class ReductionsController extends ResourceController
 {
@@ -138,6 +139,12 @@ class ReductionsController extends ResourceController
             $input['id'] = $id;
             $reduction =  new ReductionsEntity($input);
             model("ReductionsModel")->update($id, $reduction);
+        } catch (DataException $de) {
+            $response = [
+                'statut'  => 'ok',
+                'message' => "Aucune modification apportée.",
+            ];
+            return $this->sendResponse($response);
         } catch (\Throwable $th) {
             $errorsData = $this->getErrorsData($th, isset($hasError));
             $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;

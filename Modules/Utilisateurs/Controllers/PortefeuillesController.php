@@ -8,6 +8,7 @@ use CodeIgniter\RESTful\ResourceController;
 use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\HTTP\ResponseInterface;
 use Modules\Utilisateurs\Entities\PortefeuillesEntity;
+use CodeIgniter\Database\Exceptions\DataException;
 
 class PortefeuillesController extends ResourceController
 {
@@ -175,6 +176,12 @@ class PortefeuillesController extends ResourceController
             }
             $infoPortefeuille = new PortefeuillesEntity($input);
             model("PortefeuillesModel")->update($id, $infoPortefeuille);
+        } catch (DataException $de) {
+            $response = [
+                'statut'  => 'ok',
+                'message' => "Aucune modification apportée.",
+            ];
+            return $this->sendResponse($response);
         } catch (\Throwable $th) {
             $errorsData = $this->getErrorsData($th, isset($hasError));
             $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;

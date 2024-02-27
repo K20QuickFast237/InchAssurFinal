@@ -8,6 +8,7 @@ use CodeIgniter\RESTful\ResourceController;
 use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\HTTP\ResponseInterface;
 use Modules\Produits\Entities\CategorieProduitsEntity;
+use CodeIgniter\Database\Exceptions\DataException;
 
 class CategoriesController extends ResourceController
 {
@@ -165,6 +166,12 @@ class CategoriesController extends ResourceController
             if ($img_id) {
                 deleteImage($img_id);
             }
+        } catch (DataException $de) {
+            $response = [
+                'statut'  => 'ok',
+                'message' => "Aucune modification apportée.",
+            ];
+            return $this->sendResponse($response);
         } catch (\Throwable $th) {
             $errorsData = $this->getErrorsData($th, isset($hasError));
             $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;

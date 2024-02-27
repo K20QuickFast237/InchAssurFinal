@@ -9,6 +9,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\RESTful\ResourceController;
 use Modules\Assurances\Entities\AssurancesEntity;
 use Modules\Produits\Entities\ProduitsEntity;
+use CodeIgniter\Database\Exceptions\DataException;
 
 class AssurancesController extends ResourceController
 {
@@ -318,6 +319,12 @@ class AssurancesController extends ResourceController
             }
             $assur->fill($input);
             $model->update($id, $assur);
+        } catch (DataException $de) {
+            $response = [
+                'statut'  => 'ok',
+                'message' => "Aucune modification apportée.",
+            ];
+            return $this->sendResponse($response);
         } catch (\Throwable $th) {
             $errorsData = $this->getErrorsData($th, isset($hasError));
             $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;

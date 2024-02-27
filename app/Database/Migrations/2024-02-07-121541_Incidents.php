@@ -18,7 +18,7 @@ class Incidents extends Migration
             `code` varchar(75) COLLATE utf8mb4_bin NOT NULL,
             `titre` varchar(150) COLLATE utf8mb4_bin NOT NULL,
             `description` varchar(255) COLLATE utf8mb4_bin NOT NULL,
-            `statut` tinyint NOT NULL DEFAULT '1' COMMENT 'inactif/actif',
+            `etat` tinyint NOT NULL DEFAULT '1' COMMENT 'inactif/actif',
             `type_id` int unsigned NOT NULL,
             `auteur_id` int unsigned NOT NULL,
             `conversation_id` int unsigned NOT NULL,

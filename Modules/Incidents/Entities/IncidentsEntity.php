@@ -22,7 +22,7 @@ class IncidentsEntity extends Entity
 
     protected $datamap = [
         // property_name => db_column_name
-        'idSinistre'     => 'id',
+        'idIncident'     => 'id',
         'auteur'         => "auteur_id",
         'type'           => "type_id",
         'idConversation' => "conversation_id",

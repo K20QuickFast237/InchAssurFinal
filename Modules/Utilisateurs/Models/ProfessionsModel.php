@@ -1,25 +1,27 @@
 <?php
 
-namespace Modules\Incidents\Models;
+namespace Modules\Utilisateurs\Models;
 
 use CodeIgniter\Model;
 
-class IncidentTypesModel extends Model
+class ProfessionsModel extends Model
 {
-    protected $table            = 'incident_types';
+    protected $DBGroup          = 'default';
+    protected $table            = 'profession_lists';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
+    protected $insertID         = 0;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ["nom", "description", "statut"];
+    protected $allowedFields    = ["titre", "description"];
 
     // Dates
     protected $useTimestamps = false;
     protected $dateFormat    = 'datetime';
-    protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
-    protected $deletedField  = 'deleted_at';
+    protected $createdField  = 'dateCreation';
+    protected $updatedField  = 'dateModification';
+    protected $deletedField  = 'dateSuppression';
 
     // Validation
     protected $validationRules      = [];

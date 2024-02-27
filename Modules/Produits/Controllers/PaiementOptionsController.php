@@ -7,6 +7,7 @@ use App\Traits\ErrorsDataTrait;
 use CodeIgniter\RESTful\ResourceController;
 use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\HTTP\ResponseInterface;
+use CodeIgniter\Database\Exceptions\DataException;
 use Modules\Produits\Entities\PaiementOptionsEntity;
 use Modules\Produits\Entities\ReductionsEntity;
 
@@ -177,6 +178,12 @@ class PaiementOptionsController extends ResourceController
             $input['id'] = $id;
             $payOpt = new $entityName($input);
             model($modelName)->update($id, $payOpt);
+        } catch (DataException $de) {
+            $response = [
+                'statut'  => 'ok',
+                'message' => "Aucune modification apportée.",
+            ];
+            return $this->sendResponse($response);
         } catch (\Throwable $th) {
             $errorsData = $this->getErrorsData($th, isset($hasError));
             $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;

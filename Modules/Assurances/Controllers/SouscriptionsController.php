@@ -10,6 +10,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use Modules\Assurances\Entities\QuestionAnswersEntity;
 use Modules\Assurances\Entities\QuestionsEntity;
 use Modules\Assurances\Entities\SouscriptionsEntity;
+use CodeIgniter\Database\Exceptions\DataException;
 
 class SouscriptionsController extends ResourceController
 {
@@ -257,6 +258,12 @@ class SouscriptionsController extends ResourceController
             $souscription = model("SouscriptionsModel")->find($id);
             $souscription->fill($input);
             model("SouscriptionsModel")->update($id, $souscription);
+        } catch (DataException $de) {
+            $response = [
+                'statut'  => 'ok',
+                'message' => "Aucune modification apportée.",
+            ];
+            return $this->sendResponse($response);
         } catch (\Throwable $th) {
             $errorsData = $this->getErrorsData($th, isset($hasError));
             $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;
