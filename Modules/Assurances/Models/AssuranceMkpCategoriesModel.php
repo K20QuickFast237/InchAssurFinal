@@ -3,19 +3,18 @@
 namespace Modules\Assurances\Models;
 
 use CodeIgniter\Model;
-use Modules\Assurances\Entities\AssuranceTypeEntity;
 
-class AssuranceTypesModel extends Model
+class AssuranceMkpCategoriesModel extends Model
 {
     protected $DBGroup          = 'default';
-    protected $table            = 'assurance_types';
+    protected $table            = 'assurance_categoriesmkp';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $insertID         = 0;
-    protected $returnType       = AssuranceTypeEntity::class;
+    protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['nom', 'description'];
+    protected $allowedFields    = ['assurance_id', 'categorie_mkp_id'];
 
     // Dates
     protected $useTimestamps = false;
@@ -40,10 +39,4 @@ class AssuranceTypesModel extends Model
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
-
-    public function getSimplified($id)
-    {
-        return $this->select("id, nom, description")
-            ->where('id', $id)->first();
-    }
 }

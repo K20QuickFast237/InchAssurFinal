@@ -9,6 +9,10 @@ function saveImage(UploadedFile $img, $folderpath = "uploads/image")
         return model('ImagesModel')->insert($data);
     }
 }
+function getImageInfo(UploadedFile $img, $folderpath = "uploads/image")
+{
+    return getInfoImage($img, $folderpath);
+}
 
 function deleteImage($id)
 {

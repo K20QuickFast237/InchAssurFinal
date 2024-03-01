@@ -1,28 +1,25 @@
 <?php
 
-namespace Modules\Assurances\Models;
+namespace Modules\Messageries\Models;
 
 use CodeIgniter\Model;
-use Modules\Assurances\Entities\AssuranceTypeEntity;
 
-class AssuranceTypesModel extends Model
+class MessageImagesModel extends Model
 {
-    protected $DBGroup          = 'default';
-    protected $table            = 'assurance_types';
+    protected $table            = 'message_images';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
-    protected $insertID         = 0;
-    protected $returnType       = AssuranceTypeEntity::class;
+    protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['nom', 'description'];
+    protected $allowedFields    = ["message_id", "image_id"];
 
     // Dates
     protected $useTimestamps = false;
     protected $dateFormat    = 'datetime';
-    protected $createdField  = 'dateCreation';
-    protected $updatedField  = 'dateModification';
-    protected $deletedField  = 'dateSuppression';
+    protected $createdField  = '';
+    protected $updatedField  = '';
+    protected $deletedField  = '';
 
     // Validation
     protected $validationRules      = [];
@@ -40,10 +37,4 @@ class AssuranceTypesModel extends Model
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
-
-    public function getSimplified($id)
-    {
-        return $this->select("id, nom, description")
-            ->where('id', $id)->first();
-    }
 }

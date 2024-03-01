@@ -1,21 +1,20 @@
 <?php
 
-namespace Modules\Assurances\Models;
+namespace Modules\Produits\Models;
 
 use CodeIgniter\Model;
-use Modules\Assurances\Entities\AssuranceTypeEntity;
 
-class AssuranceTypesModel extends Model
+class MkpCategorieProduitsModel extends Model
 {
     protected $DBGroup          = 'default';
-    protected $table            = 'assurance_types';
+    protected $table            = 'categorie_mkps';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $insertID         = 0;
-    protected $returnType       = AssuranceTypeEntity::class;
+    protected $returnType       = '\Modules\Produits\Entities\CategorieProduitsEntity';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['nom', 'description'];
+    protected $allowedFields    = ['nom', 'description', 'image_id'];
 
     // Dates
     protected $useTimestamps = false;
@@ -40,10 +39,4 @@ class AssuranceTypesModel extends Model
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
-
-    public function getSimplified($id)
-    {
-        return $this->select("id, nom, description")
-            ->where('id', $id)->first();
-    }
 }

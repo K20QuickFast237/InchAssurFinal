@@ -85,4 +85,21 @@ class ConversationEntity extends Entity
 
         return $this->attributes['membres'] ?? null;
     }
+
+    public function getMessages()
+    {
+        if (!isset($this->attributes['messages'])) {
+            $messages = model("MessagesModel")
+                ->select("messages.*, message_images.image_id, message_documents.document_id")
+                ->join("message_images", "messages.id = message_images.message_id", "left")
+                ->join("message_documents", "messages.id = message_documents.message_id", "left")
+                ->where("conversation_id", $this->attributes['id'])
+                ->where("messages.id", $this->attributes['id'])
+                ->findAll();
+            foreach ($messages as $msg) {
+                $this->attributes['messages'][] = new MessageEntity($msg);
+            }
+        }
+        return $this->attributes['messages'] ?? null;
+    }
 }

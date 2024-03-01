@@ -143,6 +143,15 @@ class AssurancesEntity extends ProduitsEntity
         return $this->attributes['categorie_id'] ?? null;
     }
 
+    public function getSousCategories()
+    {
+        if (!isset($this->attributes['sous-categorie'])) {
+            $subCatIDs = model("AssuranceMkpCategoriesModel")->where("assurance_id", $this->attributes['id'])->findColumn("categorie_mkp_id");
+            $this->attributes['sous-categorie'] = $subCatIDs ? model("MkpCategorieProduitsModel")->whereIn('id', $subCatIDs)->findAll() : [];
+        }
+        return $this?->attributes['sous-categorie'];
+    }
+
     /**
      * getImage
      * 

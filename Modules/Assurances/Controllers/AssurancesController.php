@@ -173,9 +173,17 @@ class AssurancesController extends ResourceController
                 ],
             ],
             'categorie'        => [
-                'rules' => 'required|numeric',
+                'rules' => 'required|numeric|is_not_unique[categorie_produits.id]',
                 'errors' => [
+                    'is_not_unique' => 'La valeur de {field} est requise',
                     'required' => 'La valeur de {field} est requise',
+                    'numeric'  => 'Valeur de {field} inappropriée.'
+                ],
+            ],
+            'sous-categorie'   => [
+                'rules' => 'if_exist|numeric|is_not_unique[categorie_mkps.id]',
+                'errors' => [
+                    'is_not_unique' => 'Valeur de {field} inappropriée.',
                     'numeric'  => 'Valeur de {field} inappropriée.'
                 ],
             ],
@@ -218,6 +226,12 @@ class AssurancesController extends ResourceController
                     $imgID = saveImage($img, 'uploads/assurances/images/');
                     model("AssuranceImagesModel")->insert(["assurance_id" => $assurance->id, "image_id" => $imgID]);
                 }
+            }
+            if (isset($input['sous-categorie'])) {
+                model("categorie_mkp_id")->insert([
+                    "categorie_mkp_id" => $input['sous-categorie'],
+                    "assurance_id" => $assurance->id,
+                ]);
             }
             model("AssurancesModel")->db->transCommit();
             $assurance->image;
@@ -418,7 +432,7 @@ class AssurancesController extends ResourceController
     }
 
     /**
-     * Associate services to be provided by identified assurance
+     * Associate categories of the identified assurance
      *
      * @param  mixed $id
      * @return ResponseInterface The HTTP response.
@@ -472,7 +486,7 @@ class AssurancesController extends ResourceController
             $errorsData = $this->getErrorsData($th, isset($hasError));
             $response = [
                 'statut'  => 'no',
-                'message' => "Impossible d'associer ces services.",
+                'message' => "Impossible d'associer ces catégories.",
                 'errors'  => $errorsData['errors'],
             ];
             return $this->sendResponse($response, $errorsData['code']);
@@ -959,6 +973,99 @@ class AssurancesController extends ResourceController
             'statut' => 'ok',
             'message' => $assurances ? 'Assurances de cette catégorie.' : "Aucune assurance pour cette catégorie.",
             'data' => $assurances,
+        ];
+        return $this->sendResponse($response);
+    }
+
+    public function getAssursOfSubCategory($id)
+    {
+        $assuranceIDs = model('AssuranceMkpCategoriesModel')->where('categorie_mkp_id', $id)->findColumn('assurance_id');
+        // print_r($assuranceIDs);
+        // exit;
+        $assurances   = $assuranceIDs ? model('AssurancesModel')->whereIn('id', $assuranceIDs)->findAll() : [];
+        $response = [
+            'statut' => 'ok',
+            'message' => $assurances ? 'Assurances de cette sous-catégorie.' : "Aucune assurance pour cette sous-catégorie.",
+            'data' => $assurances,
+        ];
+        return $this->sendResponse($response);
+    }
+
+    public function getAssurTypes()
+    {
+        $assuranceTypes = model('AssuranceTypesModel')->findAll();
+        $response = [
+            'statut' => 'ok',
+            'message' => $assuranceTypes ? 'Types d\'assurance.' : "Aucun type d'assurance défini.",
+            'data' => $assuranceTypes,
+        ];
+        return $this->sendResponse($response);
+    }
+
+    /**
+     * Set a subcategory to the identified assurance
+     *
+     * @param  int $id the assurance identifier
+     * @return ResponseInterface The HTTP response.
+     */
+    public function setAssursubCategories($id)
+    {
+        $user = auth()->user();
+        // $condition = model("AssurancesModel")->where('id', $id)->first();
+        if (!$user->can('assurances.create')) {
+            $response = [
+                'statut' => 'no',
+                'message' => 'Action non authorisée pour ce profil.',
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+        }
+        // if (!$condition) {
+        //     $response = [
+        //         'statut' => 'no',
+        //         'message' => 'Assurance inconnue.',
+        //     ];
+        //     return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+        // }
+
+        $rules = [
+            'sous-categories'   => 'required',
+            'sous-categories.*' => [
+                'rules'  => 'integer|is_not_unique[categorie_mkps.id]',
+                'errors' => [
+                    'integer'       => 'Sous-categorie non identifiable.',
+                    'is_not_unique' => 'Sous-categorie non reconnue.'
+                ],
+            ],
+        ];
+        $input = $this->getRequestInput($this->request);
+
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception();
+            }
+            $model = model("AssuranceMkpCategoriesModel");
+
+            foreach ($input['sous-categories'] as $idCategorie) {
+                try {
+                    $model->insert(["assurance_id" => (int)$id, "categorie_id" => (int)$idCategorie]);
+                } catch (\Throwable $th) {
+                }
+            }
+        } catch (\Throwable $th) {
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $response = [
+                'statut'  => 'no',
+                'message' => "Impossible d'associer la/les sous-catégorie(s).",
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
+
+        $response = [
+            'statut'  => 'ok',
+            'message' => "Assurance associée à la(aux) sous-catégorie(s).",
+            'data'    => [],
         ];
         return $this->sendResponse($response);
     }

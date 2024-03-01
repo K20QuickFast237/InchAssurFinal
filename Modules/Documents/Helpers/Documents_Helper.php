@@ -11,6 +11,11 @@ function saveDocument($titre, UploadedFile $img, $folderpath = "uploads/Document
     }
 }
 
+function getDocInfo($titre, UploadedFile $img, $folderpath = "uploads/Documents")
+{
+    return getInfoDoc($img, $folderpath);
+}
+
 function deleteDocument($id)
 {
     model("DocumentsModel")->where('id', $id)->delete();

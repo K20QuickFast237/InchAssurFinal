@@ -20,6 +20,9 @@ $routes->resource('categories', [
     'except' => 'new,edit',
 ]);
 $routes->post('categories/(:segment)', '\Modules\Produits\Controllers\CategoriesController::update/$1');
+$routes->post('subCategories', '\Modules\Produits\Controllers\CategoriesController::addSubCat');
+$routes->get('subCategories', '\Modules\Produits\Controllers\CategoriesController::getAllSubCat');
+$routes->get('subCategories/(:num)', '\Modules\Produits\Controllers\CategoriesController::showSubcat/$1');
 
 
 //------------ Reductions ---------------------------

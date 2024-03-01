@@ -217,6 +217,108 @@ class CategoriesController extends ResourceController
         return $this->sendResponse($response);
     }
 
+    /**
+     * Retrieve the all MarketPlace categories
+     *
+     * @return ResponseInterface The HTTP response.
+     */
+    public function getAllSubCat()
+    {
+        $response = [
+            'status' => 'ok',
+            'message' => 'Sous-categories disponibles.',
+            'data' => model("MkpCategorieProduitsModel")->findAll(),
+        ];
+        return $this->sendResponse($response);
+    }
+
+    /**
+     * Add a MarketPlace category
+     *
+     * @return ResponseInterface The HTTP response.
+     */
+    public function addSubcat()
+    {
+        $rules = [
+            'nom' => [
+                'rules' => 'required|is_unique[categorie_mkps.nom]',
+                'errors' => [
+                    'required' => 'Le nom est requis',
+                    'is_unique' => 'Une sous-catégorie de ce nom existe déja',
+                ]
+            ],
+            'description' => 'if_exist',
+            'image' => [
+                'rules' => 'if_exist|max_size[image,100]'
+                    . '|mime_in[image,image/png,image/jpg,image/gif]'
+                    . '|ext_in[image,png,jpg,gif]|max_dims[image,1024,768]',
+                "errors" => [
+                    "max_size" => "La taille de l'image est trop grande",
+                    "mime_in"  => "Le format de l'image n'est pas valide",
+                    "ext_in"   => "Le format de l'image n'est pas valide",
+                    "max_dims" => "La taille de l'image est trop grande",
+                ]
+            ],
+        ];
+        $input = $this->getRequestInput($this->request);
+        $img   = $this->request->getFile('image') ?? null;
+
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception('');
+            }
+            if ($img) {
+                $input['image_id'] = saveImage($img, 'uploads/categories/images/');
+            }
+
+            // $input['idCategorie'] = model("CategorieProduitsModel")->insert(new CategorieProduitsEntity($input));
+            $input['id'] = model("MkpCategorieProduitsModel")->insert($input);
+        } catch (\Throwable $th) {
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;
+            $response = [
+                'statut'  => 'no',
+                'message' => $validationError ? $errorsData['errors'] : "Impossible d'ajouter cette categorie.",
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
+
+        $response = [
+            'statut'  => 'ok',
+            'message' => 'Sous-categorie ajoutée.',
+            'data'    => new CategorieProduitsEntity($input),
+        ];
+        return $this->sendResponse($response, ResponseInterface::HTTP_CREATED);
+    }
+
+    /**
+     * Retrieve the details of a MarketPlace category
+     *
+     * @param  int $id - the specified category Identifier
+     * @return ResponseInterface The HTTP response.
+     */
+    public function showSubcat($id = null)
+    {
+        try {
+            $data = model("MkpCategorieProduitsModel")->where('id', $id)->first();
+            $response = [
+                'status' => 'ok',
+                'message' => 'Détails de la Sous-categorie.',
+                'data' => $data ?? throw new \Exception("Sous-categorie introuvable"),
+            ];
+            return $this->sendResponse($response);
+        } catch (\Throwable $th) {
+            $response = [
+                'status' => 'no',
+                'message' => 'Sous-categorie introuvable.',
+                'data' => [],
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_NOT_ACCEPTABLE);
+        }
+    }
+
     /*
      * Retrieves the list of states.
      *

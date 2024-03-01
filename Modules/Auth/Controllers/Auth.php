@@ -62,19 +62,19 @@ class Auth extends BaseController
         $rules  = $config->registration;
 
         $input = $this->getRequestInput($this->request);
-        // unset($input['passwordConfirm']);
-        $input['nom']      = strtoupper($input['nom']);
-        $input['prenom']   = ucfirst($input['prenom']);
-        $input["code"]     = random_string('alnum', 10);
-        $input['username'] = $input["nom"] . ' ' . $input['prenom'];
-        $codeConnect       = strtoupper(random_string("alnum", 6));
-        $input['codeconnect'] = $codeConnect;
 
         try {
             if (!$this->validate($rules)) {
                 $hasError = true;
                 throw new \Exception();
             }
+            // unset($input['passwordConfirm']);
+            $input['nom']      = strtoupper($input['nom']);
+            $input['prenom']   = ucfirst($input['prenom']);
+            $input["code"]     = random_string('alnum', 10);
+            $input['username'] = $input["nom"] . ' ' . $input['prenom'];
+            $codeConnect       = strtoupper(random_string("alnum", 6));
+            $input['codeconnect'] = $codeConnect;
             // Get the User Provider (UserModel by default)
             $users = auth()->getProvider();
 

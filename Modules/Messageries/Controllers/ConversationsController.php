@@ -357,4 +357,78 @@ class ConversationsController extends BaseController
         ];
         return $this->sendResponse($response);
     }
+
+    public function getConversationMessages(int $id)
+    {
+        $conversation = model("ConversationsModel")->where('id', $id)->first();
+        $response = [
+            'statut' => 'ok',
+            'message' => $conversation ? 'Messages de la conversation.' : 'Aucun message de conversation trouvé.',
+            'data' => $conversation->messages ?? [],
+        ];
+        return $this->sendResponse($response);
+    }
+
+    public function addConversationMessage(int $id)
+    {
+        $rules = [
+            "message"   => 'required_without[images,documents]',
+            "images"    => 'if_exist|uploaded[images]',
+            "documents" => 'if_exist|uploaded[documents]',
+        ];
+
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception();
+            }
+            $input = $this->getRequestInput($this->request);
+            $files     = $this->request->getFiles();
+            $images    = $files["images"] ?? [];
+            $documents = $files["documents"] ?? [];
+
+            $data = ["images" => [], "documents" => []];
+            $msgInfo = [
+                "to_conversation_id" => $id,
+                "from_user_id" => $this->request->utilisateur->id,
+            ];
+            if (isset($input['message'])) {
+                $msgInfo["msg_text"] = $input['message'];
+                $data['message'] = $input['message'];
+            }
+            $msgId = model("MessagesModel")->insert($msgInfo);
+
+            foreach ($images as $img) {
+                $imgInfo = getImageInfo($img, 'uploads/messages/images/');
+                $imgID   = model('ImagesModel')->insert($imgInfo);
+                model("MessageImagesModel")->insert(["message_id" => $msgId, "image_id" => $imgID]);
+                $data['images'][] = ['idImage' => $imgID, 'url' => base_url($imgInfo['uri'])];
+            }
+
+            foreach ($documents as $doc) {
+                $title = $doc->getClientName();
+                $docInfo = getDocInfo($title, $doc, 'uploads/messages/documents/');
+                $docID   = model('DocumentsModel')->insert($docInfo);
+                model("MessageDocumentsModel")->insert(["message_id" => $msgId, "document_id" => $docID]);
+                $data['documents'][] = ['idDocument' => $docID, 'url' => base_url($docInfo['uri'])];
+            }
+        } catch (\Throwable $th) {
+            model("ConversationsModel")->db->transRollback();
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;
+            $response = [
+                'statut'  => 'no',
+                'message' => $validationError ? $errorsData['errors'] : "Impossible d'enregistrer ce message'.",
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
+
+        $response = [
+            'statut' => 'ok',
+            'message' => 'message envoyé',
+            'data'   => $data,
+        ];
+        return $this->sendResponse($response);
+    }
 }
