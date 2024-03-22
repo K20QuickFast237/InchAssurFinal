@@ -1,0 +1,19 @@
+# Orchestre les containers docker pour le projet.
+# Définit les services et volumeas nécessaires au bon fonctionnement de l'app
+
+# défini la version du fichier docker-compose
+version: "1"
+# Défini les services (containers) que compose l'apllication
+services:
+  web:
+    build: dockerfiles/php-apache
+    ports:
+      - "8383:80"
+
+  db:
+    build: dockerfiles/mysql
+    ports:
+      - "3310:3306"
+    # fait le mapping de dossiers Dossier_local:Dossier_container en tant que volume
+    volumes:
+      - /home/ubuntu/codeigniter-project/mydatabase/:/var/lib/mysql
