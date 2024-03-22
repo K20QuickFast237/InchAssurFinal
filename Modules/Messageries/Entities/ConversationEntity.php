@@ -93,11 +93,13 @@ class ConversationEntity extends Entity
                 ->select("messages.*, message_images.image_id, message_documents.document_id")
                 ->join("message_images", "messages.id = message_images.message_id", "left")
                 ->join("message_documents", "messages.id = message_documents.message_id", "left")
-                ->where("conversation_id", $this->attributes['id'])
-                ->where("messages.id", $this->attributes['id'])
+                ->where("to_conversation_id", $this->attributes['id'])
+                // ->where("messages.id", $this->attributes['id'])
                 ->findAll();
+            // $this->attributes['messages'] = $messages;
             foreach ($messages as $msg) {
-                $this->attributes['messages'][] = new MessageEntity($msg);
+                // $this->attributes['messages'][] = new MessageEntity($msg);
+                $this->attributes['messages'][] = new MessageEntity($msg->toArray());
             }
         }
         return $this->attributes['messages'] ?? null;

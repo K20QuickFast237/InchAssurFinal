@@ -32,6 +32,7 @@ $routes->resource('reductions', [
     'placeholder' => '(:segment)',
     'except' => 'new,edit',
 ]);
+$routes->get('allReductions', '\Modules\Produits\Controllers\ReductionsController::index/true');
 $routes->post('reductions/(:segment)', '\Modules\Produits\Controllers\ReductionsController::update/$1');
 
 

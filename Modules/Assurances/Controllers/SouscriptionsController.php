@@ -21,7 +21,7 @@ class SouscriptionsController extends ResourceController
     protected $helpers = ['text'];
 
     /**
-     * Retrieve all subscriptions records in the database.
+     * Retrieve all identified user subscriptions records in the database.
      *
      * @return ResponseInterface The HTTP response.
      */
@@ -29,7 +29,9 @@ class SouscriptionsController extends ResourceController
     {
         if ($identifier) {
             $identifier = $this->getIdentifier($identifier, 'id');
-            $utilisateur = model("UtilisateursModel")->where($identifier['name'], $identifier['value'])->first();
+            $utilisateur = model("UtilisateursModel")
+                ->where($identifier['name'], $identifier['value'])
+                ->first();
         } else {
             $utilisateur = $this->request->utilisateur;
         }
@@ -37,13 +39,65 @@ class SouscriptionsController extends ResourceController
             ->where("etat", SouscriptionsEntity::ACTIF)
             ->findAll();
         $response = [
-            'status' => 'ok',
+            'statut' => 'ok',
             'message' => count($subscriptions) ? 'Souscriptions trouvées.' : 'Aucune souscription trouvée.',
             'data' => $subscriptions ?? [],
         ];
         return $this->sendResponse($response);
     }
 
+    public function getWithTypeSinistre()
+    {
+        /*
+            Il est question ici de retourner les souscriptions de l'utilisateur
+            en précisant les types de sinistres auxquels chaque souscription donne accès
+        */
+        $utilisateur = $this->request->utilisateur;
+        $subscriptions = model("SouscriptionsModel")
+            ->join("souscription_beneficiaires as sousBenef", "souscription_id=souscriptions.id")
+            ->select("souscriptions.*")
+            // ->where("souscripteur_id", $utilisateur->id)
+            ->where("beneficiaire_id", $utilisateur->id)
+            ->where("etat", SouscriptionsEntity::ACTIF)
+            ->findAll();
+
+        $assurIds = array_map(fn ($s) => $s->assurance->id, $subscriptions);
+        $sinistreTypes = $assurIds ? model("SinistreTypesModel")
+            ->join("assurances", "catProduit_id=categorie_id", "left")
+            ->select("sinistre_types.id as idTypeSinistre,sinistre_types.nom,sinistre_types.description, assurances.id as idAssur")
+            ->whereIn("assurances.id", $assurIds)
+            // ->whereIn("assurances.id", [3, 7])
+            ->findAll()
+            : [];
+
+        foreach ($subscriptions as $subscription) {
+            $idAssur = $subscription->assurance->id;
+            $sinType = array_map(function ($t) use ($idAssur) {
+                if ($t['idAssur'] == $idAssur) {
+                    return [
+                        "idTypeSinistre" => (int)$t['idTypeSinistre'],
+                        "nom" => $t['nom'],
+                        "description" => $t['description']
+                    ];
+                }
+            }, $sinistreTypes);
+            $subscription->typeSinistres = array_values(array_filter($sinType));
+        }
+
+        $response = [
+            'statut' => 'ok',
+            'message' => count($subscriptions) ? count($subscriptions) . ' Souscription(s) trouvée(s).' : 'Aucune souscription trouvée.',
+            'data' => $subscriptions ?? [],
+        ];
+        return $this->sendResponse($response);
+    }
+
+
+    /**
+     * Retrieve all subscriptions records in the database.
+     *
+     * @return ResponseInterface The HTTP response.
+     */
     public function allSubscriptions()
     {
         if (!auth()->user()->inGroup('administrateur')) {
@@ -55,7 +109,7 @@ class SouscriptionsController extends ResourceController
         }
         $subscriptions = model("SouscriptionsModel")->findAll();
         $response = [
-            'status' => 'ok',
+            'statut' => 'ok',
             'message' => count($subscriptions) ? 'Souscriptions disponibles.' : 'Aucune souscription disponible.',
             'data' => $subscriptions ?? [],
         ];
@@ -78,7 +132,7 @@ class SouscriptionsController extends ResourceController
         $data?->questionAnswers;
         // } catch (\Throwable $th) {
         //     $response = [
-        //         'status' => 'no',
+        //         'statut' => 'no',
         //         'message' => 'Souscription introuvable.',
         //         'data' => [],
         //     ];
@@ -86,7 +140,7 @@ class SouscriptionsController extends ResourceController
         // }
 
         $response = [
-            'status' => 'ok',
+            'statut' => 'ok',
             'message' => $data ? 'Détails de la souscription.' : 'Souscription introuvable.',
             'data' => $data
         ];
@@ -321,7 +375,7 @@ class SouscriptionsController extends ResourceController
         $souscription  = model("SouscriptionsModel")->where($identifier['name'], $identifier['value'])->first();
         $data = $souscription?->questionAnswers;
         $response = [
-            'status'  => 'ok',
+            'statut'  => 'ok',
             'message' => $data ? "Réponses au questionnaire de souscription." : "Souscription ou réponses introuvables.",
             'data'    => $data ?? [],
         ];
@@ -462,7 +516,7 @@ class SouscriptionsController extends ResourceController
         $souscription  = model("SouscriptionsModel")->where($identifier['name'], $identifier['value'])->first();
         $data = $souscription->documents;
         $response = [
-            'status'  => 'ok',
+            'statut'  => 'ok',
             'message' => $data ? "Document(s) de la souscription." : "Aucun document trouvé pour cette souscription.",
             'data'    => $data ?? [],
         ];
@@ -515,7 +569,7 @@ class SouscriptionsController extends ResourceController
             }
         }
         $response = [
-            'status'  => 'ok',
+            'statut'  => 'ok',
             'message' => "Document(s) de souscription ajouté(s).",
             'data'    => [],
         ];
@@ -529,7 +583,7 @@ class SouscriptionsController extends ResourceController
         $data = $souscription->beneficiaires;
 
         $response = [
-            'status'  => 'ok',
+            'statut'  => 'ok',
             'message' => $data ? "Bénéficiaires de la souscription." : "Aucun bénéficiaire trouvé pour cette souscription.",
             'data'    => $data ?? [],
         ];
@@ -582,7 +636,7 @@ class SouscriptionsController extends ResourceController
             }
         }
         $response = [
-            'status'  => 'ok',
+            'statut'  => 'ok',
             'message' => "Bénéficiaire(s) de souscription ajouté(s).",
             'data'    => [],
         ];
@@ -607,7 +661,7 @@ class SouscriptionsController extends ResourceController
         $idAssur = $assurance->id;
         if (!$assurance) {
             $response = [
-                'status' => 'no',
+                'statut' => 'no',
                 'message' => "L'assurance indiquée est inconnue.",
                 'data' => [],
             ];

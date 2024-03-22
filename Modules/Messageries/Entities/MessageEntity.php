@@ -20,9 +20,11 @@ class MessageEntity extends Entity
 
     protected $datamap = [
         // property_name => db_column_name
-        'idConversation' => 'id',
+        'idMessage'      => 'id',
         'image'          => "image_id",
         'message'        => "msg_text",
+        'idConversation' => "to_conversation_id",
+        'idAuteur'       => "from_user_id",
     ];
 
     // Bind the type to the handler
@@ -30,15 +32,15 @@ class MessageEntity extends Entity
         'etatcaster' => \App\Entities\Cast\EtatCaster::class,
     ];
 
-    // public function getImageId(){
-    //     if (isset($this->attributes['categorie_id']) && gettype($this->attributes['categorie_id']) === 'string') {
-    //         // $cat = model('CategorieProduitsModel')->where('id', $this->attributes['categorie_id'])->first();
-    //         $cat = model('CategorieProduitsModel')->getSimplified($this->attributes['categorie_id']);
-    //         $this->attributes['categorie_id'] = $cat;
-    //     }
+    public function getImageId()
+    {
+        if (isset($this->attributes['image_id']) && gettype($this->attributes['image_id']) === 'string') {
+            $img = model('ImagesModel')->getSimplified($this->attributes['image_id']);
+            $this->attributes['image_id'] = $img;
+        }
 
-    //     return $this->attributes['categorie_id'] ?? null;
-    // }
+        return $this->attributes['image_id'] ?? null;
+    }
 
     // public function getDocumentId(){
 

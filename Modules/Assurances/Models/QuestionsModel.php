@@ -49,7 +49,7 @@ class QuestionsModel extends Model
      */
     public function getBulkQuestionDetails(array $questionIDs)
     {
-        $dataQuestions = $this->whereIn('id', $questionIDs)->findAll();
+        $dataQuestions = $questionIDs ? $this->whereIn('id', $questionIDs)->findAll() : [];
         foreach ($dataQuestions as $dataQuestion) {
             $options = $dataQuestion->optionsDetails;
             foreach ($options as $key => $option) {

@@ -69,6 +69,7 @@ class AssurancesController extends ResourceController
         try {
             $identifier = $this->getIdentifier($id, 'id');
             $assurance  = model("AssurancesModel")->where($identifier['name'], $identifier['value'])->first();
+            $assurance->pieces;
             $response = [
                 'statut' => 'ok',
                 'message' => "Détails de l'assurance.",
@@ -96,6 +97,7 @@ class AssurancesController extends ResourceController
         try {
             $identifier = $this->getIdentifier($id, 'id');
             $assurance  = model("AssurancesModel")->where($identifier['name'], $identifier['value'])->first();
+            $assurance->pieces;
             $assurance->questionnaire;
             $assurance->reductions;
             $assurance->services;
@@ -195,7 +197,7 @@ class AssurancesController extends ResourceController
                 ],
             ],
             'piecesAJoindre'    => 'if_exist',
-            'piecesAJoindre.*'  => 'if_exist|string|is_not_unique[document_titres.nom]',
+            'piecesAJoindre.*'  => 'if_exist|is_not_unique[document_titres.nom]',
             'image'           => [
                 'rules'  => 'uploaded[image]',
                 'errors' => ['uploaded' => 'Une image est requise'],
@@ -385,6 +387,88 @@ class AssurancesController extends ResourceController
         //     ];
         //     return $this->sendResponse($response, ResponseInterface::HTTP_NOT_ACCEPTABLE);
         // }
+    }
+
+    /**
+     * Retrieve documents required for the identified assurance subscription
+     *
+     * @param  mixed $id
+     * @return ResponseInterface The HTTP response.
+     */
+    public function getAssurPieceAjoindres($id)
+    {
+        $identifier = $this->getIdentifier($id, 'id');
+        $assurance  = model("AssurancesModel")->where($identifier['name'], $identifier['value'])->first();
+        $data = $assurance->pieces;
+
+        try {
+            $response = [
+                'statut'  => 'ok',
+                'message' => $data ? "Pièces à joindre." : "Aucune pièces à joindre pour cette assurance.",
+                'data'    => $data,
+            ];
+            return $this->sendResponse($response);
+        } catch (\Throwable $th) {
+            $response = [
+                'statut'  => 'no',
+                'message' => 'Assurance introuvable.',
+                'data'    => [],
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_NOT_ACCEPTABLE);
+        }
+    }
+
+    /**
+     * Associate documents to be Joined to the identified assurance
+     *
+     * @param  int $id
+     * @return ResponseInterface The HTTP response.
+     */
+    public function setAssurPieceAjoindres(int $id)
+    {
+        $rules = [
+            'piecesAJoindre'   => [
+                'rules' => 'required',
+                'errors' => ["required" => "Veuillez indiquer la liste de pièces à joindre."]
+            ],
+            'piecesAJoindre.*' => [
+                'rules' => 'if_exist|is_not_unique[document_titres.id]',
+                'errors' => [
+                    'is_not_unique' => 'Ces titres de documents sont inconnus.',
+                ]
+            ],
+        ];
+        $input = $this->getRequestInput($this->request);
+
+        $model = model("AssurancePiecesModel");
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception();
+            }
+            $model->db->transBegin();
+
+            foreach ($input['piecesAJoindre'] as $idpiece) {
+                $model->insert(["assurance_id" => (int)$id, "piece_id" => (int)$idpiece]);
+            }
+            $model->db->transCommit();
+        } catch (\Throwable $th) {
+            $model->db->transRollback();
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $response = [
+                'statut'  => 'no',
+                'message' => "Impossible d'associer ces pieces à l'assurance.",
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
+
+        $response = [
+            'statut'  => 'ok',
+            'message' => "Piece(s) à joindre associé(s) à l'assurance.",
+            'data'    => [],
+        ];
+        return $this->sendResponse($response);
     }
 
     /**
@@ -806,9 +890,10 @@ class AssurancesController extends ResourceController
     public function setAssurDocumentation($id)
     {
         $rules = [
-            'titre'    => ['rules' => 'required|is_not_unique[document_titres.nom]', 'errors' => [
-                'is_not_unique' => "Ce titre n'est pas reconnu"
-            ]],
+            'titre'    => 'required',
+            // 'titre'    => ['rules' => 'required|is_not_unique[document_titres.nom]', 'errors' => [
+            //     'is_not_unique' => "Ce titre n'est pas reconnu"
+            // ]],
             'url'      => 'if_exist',
             'document' => 'if_exist|uploaded[document]',
             // 'documents'   => 'required',

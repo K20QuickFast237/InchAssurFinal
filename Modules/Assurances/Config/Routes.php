@@ -14,12 +14,14 @@ $routes->group('assurances', ['namespace' => 'Modules\Assurances\Controllers'], 
     $routes->post("(:segment)/sous-categories", "AssurancesController::setAssursubCategories/$1");
     $routes->post("(:segment)/defaultCategory", "AssurancesController::setAssurdefaultCategory/$1"); // codeAssurance
     $routes->post("(:segment)/payOptions",      "AssurancesController::setAssurPayOptions/$1");
+    $routes->post("(:segment)/piecesAJoindre",  "AssurancesController::setAssurPieceAjoindres/$1");
     $routes->post("(:segment)/documentation",   "AssurancesController::setAssurDocumentation/$1"); // codeAssurance
     $routes->post("(:segment)/defaultImage",    "AssurancesController::setAssurDefaultImg/$1"); // codeAssurance
     $routes->get("utilisateur/(:segment)",      "AssurancesController::index/$1");
     $routes->get("types",                       "AssurancesController::getAssurTypes/$1");
     $routes->get("categorie/(:num)",            "AssurancesController::getAssursOfCategory/$1");
     $routes->get("sous-categorie/(:num)",       "AssurancesController::getAssursOfSubCategory/$1");
+    $routes->get("(:segment)/piecesAJoindre",   "AssurancesController::getAssurPieceAjoindres/$1");
     $routes->get("(:segment)/documentation",    "AssurancesController::getAssurDocumentation/$1"); // codeAssurance
     $routes->get("(:segment)/questionnaire",    "AssurancesController::getAssurQuestionnaire/$1"); // codeAssurance
     $routes->get("(:segment)/reductions",       "AssurancesController::getAssurReductions/$1"); // codeAssurance
@@ -69,6 +71,7 @@ $routes->group('souscriptions', ['namespace' => 'Modules\Assurances\Controllers'
     $routes->get("assurances/(:segment)/infos", "SouscriptionsController::getSouscriptAssurInfo/$1"); // codeAssurance
     $routes->get('signature', 'SouscriptionsController::codeSignature');
     $routes->get('utilisateur/(:segment)', 'SouscriptionsController::index/$1');
+    $routes->get('sinistreTypes', 'SouscriptionsController::getWithTypeSinistre');
     // $routes->get("(:segment)/infos", "SouscriptionsController::getSouscriptionInfos/$1"); // codeAssurance
     $routes->get("(:segment)/documents", "SouscriptionsController::getSouscriptionDocument/$1"); // codeAssurance
     $routes->get('(:segment)/questionAnswers', 'SouscriptionsController::getQuestionAnswer/$1');
@@ -93,6 +96,7 @@ $routes->resource('souscriptions', [
 
 //------------ Sinistres ---------------------------
 $routes->get('allSinistres', '\Modules\Assurances\Controllers\SinistresController::getAllSinistres');
+$routes->get('sinistreTypes', '\Modules\Assurances\Controllers\SinistresController::getActiveTypeSinistres');
 $routes->post('sinistres/(:segment)', '\Modules\Assurances\Controllers\SinistresController::update/$1');
 
 $routes->group('sinistres', ['namespace' => 'Modules\Assurances\Controllers'], function ($routes) {
@@ -109,6 +113,7 @@ $routes->resource('sinistres', [
     'placeholder' => '(:segment)',
     'except'      => 'new,edit',
 ]);
+
 /* Exemple
     $routes->resource('photos');
 

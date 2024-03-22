@@ -3,28 +3,25 @@
 namespace Modules\Assurances\Models;
 
 use CodeIgniter\Model;
-use Modules\Assurances\Entities\SouscriptionsEntity;
 
-class SouscriptionsModel extends Model
+class AssurancePiecesModel extends Model
 {
     protected $DBGroup          = 'default';
-    protected $table            = 'souscriptions';
+    protected $table            = 'assurance_pieces';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $insertID         = 0;
-    protected $returnType       = SouscriptionsEntity::class;
+    protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ["code", "cout", "souscripteur_id", "assurance_id", "etat", "dateDebutValidite", "dateFinValidite"];
+    protected $allowedFields    = ['assurance_id', 'piece_id'];
 
     // Dates
-    protected $useTimestamps = true;
+    protected $useTimestamps = false;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'dateCreation';
-    protected $updatedField  = '';
-    protected $deletedField  = '';
-    // protected $updatedField  = 'updated_at';
-    // protected $deletedField  = 'deleted_at';
+    protected $updatedField  = 'dateModification';
+    protected $deletedField  = 'dateSuppression';
 
     // Validation
     protected $validationRules      = [];
@@ -42,11 +39,4 @@ class SouscriptionsModel extends Model
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
-
-    public function getBasePrice($id)
-    {
-        return $this->join('assurances', 'assurances.id = souscriptions.assurance_id')
-            ->where('souscriptions.id', $id)
-            ->findColumn('assurances.prix');
-    }
 }

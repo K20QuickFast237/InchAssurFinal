@@ -44,6 +44,12 @@ class SinistresController extends BaseController
             ->where("etat", SinistresEntity::ACTIF)
             ->findAll();
 
+        $sinistres = array_map(function ($s) {
+            $s->images;
+            $s->documents;
+            return $s;
+        }, $sinistres);
+
         $response = [
             'status' => 'ok',
             'message' => count($sinistres) ? 'Sinistres déclarés.' : 'Aucun sinistre déclaré.',
@@ -76,10 +82,46 @@ class SinistresController extends BaseController
             $sinistres = model("SinistresModel")->findAll();
         }
 
+        $sinistres = array_map(function ($s) {
+            $s->images;
+            $s->documents;
+            return $s;
+        }, $sinistres);
+
         $response = [
             'status' => 'ok',
             'message' => count($sinistres) ? 'Sinistres trouvés.' : 'Aucun sinistre trouvé.',
             'data' => $sinistres ?? [],
+        ];
+        return $this->sendResponse($response);
+    }
+
+    /**
+     * Renvoie tous les types de déclarations de sinistres actifs.
+     *
+     * @param  boolean $active specifie si seuls les types de déclarations actives doivent être renvoyées
+     * @return ResponseInterface The HTTP response.
+     */
+    public function getActiveTypeSinistres($active = true)
+    {
+        if ($active) {
+            $typeSinistres = model("SinistreTypesModel")
+                ->select("id as idTypeSinistre, nom, description")
+                ->where("statut", SinistresEntity::ACTIF)
+                ->findAll();
+        } else {
+            $typeSinistres = model("SinistreTypesModel")->select("id as idTypeSinistre, nom, description")->findAll();
+        }
+
+        $typeSinistres = array_map(function ($s) {
+            $s["idTypeSinistre"] = (int)$s["idTypeSinistre"];
+            return $s;
+        }, $typeSinistres);
+
+        $response = [
+            'status' => 'ok',
+            'message' => count($typeSinistres) ? 'Type(s) de sinistre(s) trouvé(s).' : 'Aucun type de sinistre trouvé.',
+            'data' => $typeSinistres ?? [],
         ];
         return $this->sendResponse($response);
     }
@@ -199,17 +241,21 @@ class SinistresController extends BaseController
         $files     = $this->request->getFiles();
         $images    = $files["images"] ?? [];
         $documents = $files["documents"] ?? [];
+        // print_r($images);
+        // print_r($documents);
         foreach ($images as $img) {
             $imgID = saveImage($img, 'uploads/sinistres/images/');
+            // echo "\nImage: $imgID";
             model("SinistreImagesModel")->insert(["sinistre_id" => $sinistreId, "image_id" => $imgID]);
         }
 
         foreach ($documents as $doc) {
             $title = $doc->getClientName();
             $docID = saveDocument($title, $doc, 'uploads/sinistres/documents/');
+            // echo "\nDocument: $docID";
             model("SinistreDocumentsModel")->insert(["sinistre_id" => $sinistreId, "document_id" => $docID]);
         }
-
+        // exit;
         $response = [
             'statut'  => 'ok',
             'message' => 'Déclaration Enregistrée.',

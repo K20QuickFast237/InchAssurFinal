@@ -201,6 +201,20 @@ class AssurancesEntity extends ProduitsEntity
     }
 
     /**
+     * renvoie la liste des services de l'assurance
+     *
+     * @return array
+     */
+    public function getPieces()
+    {
+        if (!isset($this->attributes['pieces'])) {
+            $piecesIDs = model("AssurancePiecesModel")->where("assurance_id", $this->attributes['id'])->findColumn("piece_id");
+            $this->attributes['pieces'] = $piecesIDs ? model("DocumentTitresModel")->whereIn('id', $piecesIDs)->findAll() : [];
+        }
+        return $this?->attributes['pieces'];
+    }
+
+    /**
      * renvoie la liste des reductions de l'assurance
      *
      * @return array

@@ -138,7 +138,7 @@ class IncidentsController extends BaseController
             $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;
             $response = [
                 'statut'  => 'no',
-                'message' => $validationError ? $errorsData['errors'] : "Impossible de déclarer ce sinistre.",
+                'message' => "Impossible de déclarer ce sinistre.",
                 'errors'  => $errorsData['errors'],
             ];
             return $this->sendResponse($response, $errorsData['code']);

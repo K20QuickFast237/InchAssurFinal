@@ -135,10 +135,11 @@ class QuestionsController extends ResourceController
                     'alpha_numeric_punct' => "La valeur de {field} ne doit pas contenir de caractères spéciaux.",
                 ]
             ],
-            'isRequired' => [
-                'rules'  => 'required',
-                'errors' => ['required' => "La valeur de {field} est requise.",]
-            ],
+            'isRequired' => 'permit_empty',
+            // 'isRequired' => [
+            //     'rules'  => 'required|permit_empty',
+            //     'errors' => ['required' => "La valeur de {field} est requise.",]
+            // ],
             'description' => 'if_exist',
             "options.*.prix" => [
                 'rules'  => 'required|numeric',
@@ -208,7 +209,7 @@ class QuestionsController extends ResourceController
             $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;
             $response = [
                 'statut'  => 'no',
-                'message' => $validationError ? $errorsData['errors'] : "Impossible d'enregistrer la question.",
+                'message' => "Impossible d'enregistrer la question.",
                 'errors'  => $errorsData['errors'],
             ];
             return $this->sendResponse($response, $errorsData['code']);

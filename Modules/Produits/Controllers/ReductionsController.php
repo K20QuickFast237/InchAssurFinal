@@ -22,12 +22,24 @@ class ReductionsController extends ResourceController
      *
      * @return ResponseInterface The HTTP response.
      */
-    public function index()
+    public function index($all = false)
     {
+        if ($all) {
+            if (!auth()->user()->inGroup('administrateur')) {
+                $response = [
+                    'statut' => 'no',
+                    'message' => 'Action non authorisée pour ce profil.',
+                ];
+                return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+            }
+            $reductions = model("ReductionsModel")->findAll();
+        } else {
+            $reductions = model("ReductionsModel")->where("auteur_id", $this->request->utilisateur->id)->findAll();
+        }
         $response = [
             'statut' => 'ok',
             'message' => 'Reductions disponibles.',
-            'data' => model("ReductionsModel")->findAll(),
+            'data' => $reductions,
         ];
         return $this->sendResponse($response);
     }
