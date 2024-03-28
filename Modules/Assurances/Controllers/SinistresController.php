@@ -241,8 +241,7 @@ class SinistresController extends BaseController
         $files     = $this->request->getFiles();
         $images    = $files["images"] ?? [];
         $documents = $files["documents"] ?? [];
-        // print_r($images);
-        // print_r($documents);
+
         foreach ($images as $img) {
             $imgID = saveImage($img, 'uploads/sinistres/images/');
             // echo "\nImage: $imgID";
@@ -252,10 +251,10 @@ class SinistresController extends BaseController
         foreach ($documents as $doc) {
             $title = $doc->getClientName();
             $docID = saveDocument($title, $doc, 'uploads/sinistres/documents/');
-            // echo "\nDocument: $docID";
+
             model("SinistreDocumentsModel")->insert(["sinistre_id" => $sinistreId, "document_id" => $docID]);
         }
-        // exit;
+
         $response = [
             'statut'  => 'ok',
             'message' => 'Déclaration Enregistrée.',

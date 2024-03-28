@@ -35,7 +35,8 @@ trait ControllerUtilsTrait
             return (int)$value;
         } else {
             $valueNum = (int)$value;
-            if (strlen($value) >= 1 && $valueNum) {
+            // if (strlen($value) >= 1 && $valueNum) {
+            if (strlen($value) == strlen($valueNum)) {
                 return $valueNum;
             }
         }
