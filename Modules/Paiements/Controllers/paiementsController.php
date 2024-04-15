@@ -2,6 +2,9 @@
 
 namespace Modules\Paiements\Controllers;
 
+// require_once '..\ThirdParty\monetbil-php-master\monetbil.php';
+require_once ROOTPATH . 'Modules\Paiements\ThirdParty\monetbil-php-master\monetbil.php';
+
 use App\Traits\ControllerUtilsTrait;
 use App\Traits\ErrorsDataTrait;
 use CodeIgniter\API\ResponseTrait;
@@ -13,7 +16,9 @@ use Modules\Paiements\Entities\LignetransactionEntity;
 use Modules\Paiements\Entities\PaiementEntity;
 use Modules\Paiements\Entities\PayOptionEntity;
 use Modules\Paiements\Entities\TransactionEntity;
-// use Monetbil;
+use Monetbil;
+// use Modules\Paiements\ThirdParty\monetbil_php_master\monetbil as Monetbil;
+// use \Monetbil;
 
 class PaiementsController extends ResourceController
 {
@@ -378,36 +383,36 @@ class PaiementsController extends ResourceController
     {
         require_once ROOTPATH . 'Modules\Paiements\ThirdParty\monetbil-php-master\monetbil.php';
 
-        $params = \Monetbil::getPost();
-        $service_secret = \Monetbil::getServiceSecret();
+        $params = Monetbil::getPost();
+        $service_secret = Monetbil::getServiceSecret();
 
-        if (!\Monetbil::checkSign($service_secret, $params)) {
+        if (!Monetbil::checkSign($service_secret, $params)) {
             header('HTTP/1.0 403 Forbidden');
             exit('Error: Invalid signature');
         }
 
-        $service          = \Monetbil::getPost('service');
-        $transaction_id   = \Monetbil::getPost('transaction_id');
-        $transaction_uuid = \Monetbil::getPost('transaction_uuid');
-        $phone            = \Monetbil::getPost('msisdn');
-        $amount           = \Monetbil::getPost('amount');
-        $fee              = \Monetbil::getPost('fee');
-        $status           = \Monetbil::getPost('status');
-        $message          = \Monetbil::getPost('message');
-        $country_name     = \Monetbil::getPost('country_name');
-        $country_iso      = \Monetbil::getPost('country_iso');
-        $country_code     = \Monetbil::getPost('country_code');
-        $mccmnc           = \Monetbil::getPost('mccmnc');
-        $operator         = \Monetbil::getPost('mobile_operator_name');
-        $currency         = \Monetbil::getPost('currency');
-        $user             = \Monetbil::getPost('user');
-        $item_ref         = \Monetbil::getPost('item_ref');
-        $payment_ref      = \Monetbil::getPost('payment_ref');
-        $first_name       = \Monetbil::getPost('first_name');
-        $last_name        = \Monetbil::getPost('last_name');
-        $email            = \Monetbil::getPost('email');
+        $service          = Monetbil::getPost('service');
+        $transaction_id   = Monetbil::getPost('transaction_id');
+        $transaction_uuid = Monetbil::getPost('transaction_uuid');
+        $phone            = Monetbil::getPost('msisdn');
+        $amount           = Monetbil::getPost('amount');
+        $fee              = Monetbil::getPost('fee');
+        $status           = Monetbil::getPost('status');
+        $message          = Monetbil::getPost('message');
+        $country_name     = Monetbil::getPost('country_name');
+        $country_iso      = Monetbil::getPost('country_iso');
+        $country_code     = Monetbil::getPost('country_code');
+        $mccmnc           = Monetbil::getPost('mccmnc');
+        $operator         = Monetbil::getPost('mobile_operator_name');
+        $currency         = Monetbil::getPost('currency');
+        $user             = Monetbil::getPost('user');
+        $item_ref         = Monetbil::getPost('item_ref');
+        $payment_ref      = Monetbil::getPost('payment_ref');
+        $first_name       = Monetbil::getPost('first_name');
+        $last_name        = Monetbil::getPost('last_name');
+        $email            = Monetbil::getPost('email');
 
-        list($payment_status) = \Monetbil::checkPayment($transaction_id);
+        list($payment_status) = Monetbil::checkPayment($transaction_id);
 
         $ligneTransact = model("LigneTransactionModel")->where('souscription_id', $item_ref)->first();
         $idLigneTransact = $ligneTransact->id;
@@ -446,8 +451,8 @@ class PaiementsController extends ResourceController
         }
 
         /** @todo Line to remove */
-        file_put_contents(WRITEPATH . '/BillContent/' . date('Y-m-d') . 'txt', json_encode([
-            'received data' => \Monetbil::getPost()
+        file_put_contents(WRITEPATH . PATH_SEPARATOR . 'BillContent' . PATH_SEPARATOR . date('Y-m-d') . '.txt', json_encode([
+            'received data' => Monetbil::getPost()
         ]));
         // Received
         exit('received');
@@ -489,19 +494,20 @@ class PaiementsController extends ResourceController
         $payment_ref    = $input['payment_ref'];
         $payment_status = $input['payment_status'];
 
-        $ligneTransact = model("LigneTransactionModel")->where('souscription_id', $item_ref)->first();
-        $idLigneTransact = $ligneTransact->id;
-        $idAssurance = $ligneTransact->idproduit_id;
+        $ligneTransact = model("LignetransactionsModel")->where('souscription_id', $item_ref)->first();
+        $idLigneTransact = $ligneTransact->id ?? null;
+        $idAssurance = $ligneTransact->idproduit_id ?? null;
         unset($ligneTransact);
         $transactInfo = model("TransactionsModel")->join("transaction_lignes", "transaction_id=transactions.id")
             ->select('transactions.*')
             ->where("ligne_id", $idLigneTransact)
             ->first();
 
-        if (\Monetbil::STATUS_SUCCESS == $payment_status) {
+        if (Monetbil::STATUS_SUCCESS == $payment_status) {
             // Successful payment!
             model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::VALIDE)->update();
-
+            $message = "Paiement Réussi.";
+            $code = ResponseInterface::HTTP_OK;
             if ($transactInfo['reste_a_payer'] <= 0) {
                 model("TransactionsModel")->update($transactInfo['id'], ['etat' => TransactionEntity::TERMINE]);
             } else {
@@ -517,25 +523,29 @@ class PaiementsController extends ResourceController
                 "dateFinValidite"   => date('Y-m-d', strtotime("$today + $duree days")),
             ])->update();
             // Mark the order as paid in your system
-        } elseif (\Monetbil::STATUS_CANCELLED == $payment_status) {
+        } elseif (Monetbil::STATUS_CANCELLED == $payment_status) {
             // Transaction cancelled
             model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::ANNULE)->update();
+            $message = "Paiement Annulé.";
+            $code = ResponseInterface::HTTP_BAD_REQUEST;
         } else {
             // Payment failed!
             model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::ECHOUE)->update();
+            $message = "Echec du Paiement.";
+            $code = ResponseInterface::HTTP_BAD_REQUEST;
         }
 
         /** @todo Line to remove */
         file_put_contents(WRITEPATH . '/BillContent/' . date('Y-m-d') . 'txt', json_encode([
-            'received data' => \Monetbil::getPost()
+            'received data' => Monetbil::getPost()
         ]));
         // Received
         $response = [
-            'status'  => 'ok',
-            'message' => "Paiement réussi.",
+            'statut'  => 'ok',
+            'message' => $message,
             'data'    => [],
         ];
-        return $this->sendResponse($response);
+        return $this->sendResponse($response, $code);
     }
 
     public function getCountries()
