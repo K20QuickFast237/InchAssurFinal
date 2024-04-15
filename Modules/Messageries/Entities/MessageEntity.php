@@ -11,6 +11,8 @@ class MessageEntity extends Entity
     use EtatsListTrait;
 
     public static $etats = ["Inactif", "Actif"];
+    const INACTIVE_STATE = 0, ACTIVE_STATE = 1;
+    const UNREADED = 0, READED = 1;
 
     // Defining a type with parameters
     protected $casts = [

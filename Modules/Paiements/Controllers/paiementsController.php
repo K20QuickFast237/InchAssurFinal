@@ -99,7 +99,7 @@ class PaiementsController extends ResourceController
 
         if (isset($message)) {
             $response = [
-                'status'  => 'no',
+                'statut'  => 'no',
                 'message' => $message,
             ];
             return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
@@ -113,7 +113,7 @@ class PaiementsController extends ResourceController
             "prixFinal"     => $prixInitial - $reduction
         ];
         $response = [
-            'status'  => 'ok',
+            'statut'  => 'ok',
             'message' => "Réduction appliquée.",
             'data'    => $data ?? [],
         ];
@@ -143,7 +143,7 @@ class PaiementsController extends ResourceController
     }
 
     /**
-     * Initialyse la souscriptionj à une assurance en générant un lien,
+     * Initialyse la souscription à une assurance en générant un lien,
      * après avoir initié la transaction.        
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
@@ -451,6 +451,91 @@ class PaiementsController extends ResourceController
         ]));
         // Received
         exit('received');
+    }
+
+    /**
+     * localSetPayStatus fait approximativement les mêmes traitements que setPayStatus
+     * à la différence que les données transites par le front au lieu de venir directement
+     * de monetbill. Ceci est utili pour les tests en local.
+     *
+     * @return 
+     */
+    public function localSetPayStatus()
+    {
+        $rules = [
+            'transaction_id' => 'required',
+            'item_ref'       => 'required',
+            'payment_ref'    => 'required',
+            'payment_status' => 'required',
+        ];
+
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception('');
+            }
+        } catch (\Throwable $th) {
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $response = [
+                'statut'  => 'no',
+                'message' => $errorsData['errors'],
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
+        $input = $this->getRequestInput($this->request);
+        $transaction_id = $input['transaction_id'];
+        $item_ref       = $input['item_ref'];
+        $payment_ref    = $input['payment_ref'];
+        $payment_status = $input['payment_status'];
+
+        $ligneTransact = model("LigneTransactionModel")->where('souscription_id', $item_ref)->first();
+        $idLigneTransact = $ligneTransact->id;
+        $idAssurance = $ligneTransact->idproduit_id;
+        unset($ligneTransact);
+        $transactInfo = model("TransactionsModel")->join("transaction_lignes", "transaction_id=transactions.id")
+            ->select('transactions.*')
+            ->where("ligne_id", $idLigneTransact)
+            ->first();
+
+        if (\Monetbil::STATUS_SUCCESS == $payment_status) {
+            // Successful payment!
+            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::VALIDE)->update();
+
+            if ($transactInfo['reste_a_payer'] <= 0) {
+                model("TransactionsModel")->update($transactInfo['id'], ['etat' => TransactionEntity::TERMINE]);
+            } else {
+                model("TransactionsModel")->update($transactInfo['id'], ['etat' => TransactionEntity::EN_COURS]);
+            }
+            $souscription = model("SouscriptionsModel")->where("code", $item_ref)->first();
+            $duree = model("AssurancesModel")->where('id', $idAssurance)->findColumn('duree')[0];
+            $today = date('Y-m-d');
+
+            model("SouscriptionsModel")->where("code", $item_ref)->set([
+                "etat"              => SouscriptionsEntity::ACTIF,
+                "dateDebutValidite" => $today,
+                "dateFinValidite"   => date('Y-m-d', strtotime("$today + $duree days")),
+            ])->update();
+            // Mark the order as paid in your system
+        } elseif (\Monetbil::STATUS_CANCELLED == $payment_status) {
+            // Transaction cancelled
+            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::ANNULE)->update();
+        } else {
+            // Payment failed!
+            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::ECHOUE)->update();
+        }
+
+        /** @todo Line to remove */
+        file_put_contents(WRITEPATH . '/BillContent/' . date('Y-m-d') . 'txt', json_encode([
+            'received data' => \Monetbil::getPost()
+        ]));
+        // Received
+        $response = [
+            'status'  => 'ok',
+            'message' => "Paiement réussi.",
+            'data'    => [],
+        ];
+        return $this->sendResponse($response);
     }
 
     public function getCountries()

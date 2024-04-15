@@ -21,4 +21,5 @@ $routes->post('initpaiement/assurance', '\Modules\Paiements\Controllers\Paiement
 $routes->group('paiements', ['namespace' => 'Modules\Paiements\Controllers'], static function ($routes) {
     $routes->get('pays', 'PaiementsController::getCountries');
     $routes->post('notify', 'PaiementsController::setPayStatus');
+    $routes->post('statut', 'PaiementsController::localSetPayStatus');
 });
