@@ -37,6 +37,7 @@ class SouscriptionsController extends ResourceController
         }
         $subscriptions = model("SouscriptionsModel")->where("souscripteur_id", $utilisateur->id)
             ->where("etat", SouscriptionsEntity::ACTIF)
+            ->orderBy("id", "DESC")
             ->findAll();
         $response = [
             'statut' => 'ok',

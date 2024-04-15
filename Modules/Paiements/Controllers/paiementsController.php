@@ -17,6 +17,8 @@ use Modules\Paiements\Entities\PaiementEntity;
 use Modules\Paiements\Entities\PayOptionEntity;
 use Modules\Paiements\Entities\TransactionEntity;
 use Monetbil;
+use preload;
+
 // use Modules\Paiements\ThirdParty\monetbil_php_master\monetbil as Monetbil;
 // use \Monetbil;
 
@@ -414,7 +416,8 @@ class PaiementsController extends ResourceController
 
         list($payment_status) = Monetbil::checkPayment($transaction_id);
 
-        $ligneTransact = model("LigneTransactionModel")->where('souscription_id', $item_ref)->first();
+        $souscription = model("SouscriptionsModel")->where("code", $item_ref)->first();
+        $ligneTransact = model("LigneTransactionModel")->where('souscription_id', $souscription->id)->first();
         $idLigneTransact = $ligneTransact->id;
         $idAssurance = $ligneTransact->idproduit_id;
         unset($ligneTransact);
@@ -494,15 +497,23 @@ class PaiementsController extends ResourceController
         $payment_ref    = $input['payment_ref'];
         $payment_status = $input['payment_status'];
 
-        $ligneTransact = model("LignetransactionsModel")->where('souscription_id', $item_ref)->first();
-        $idLigneTransact = $ligneTransact->id ?? null;
-        $idAssurance = $ligneTransact->idproduit_id ?? null;
+        $souscription = model("SouscriptionsModel")->where("code", $item_ref)->first();
+        $ligneTransact = model("LignetransactionsModel")->where('souscription_id', $souscription->id)->first();
+        $idLigneTransact = $ligneTransact->id; // ?? null;
+        $idAssurance = $ligneTransact->produit_id; // ?? null;
         unset($ligneTransact);
         $transactInfo = model("TransactionsModel")->join("transaction_lignes", "transaction_id=transactions.id")
             ->select('transactions.*')
             ->where("ligne_id", $idLigneTransact)
             ->first();
-
+        if (!$transactInfo) {
+            $response = [
+                'statut'  => 'no',
+                'message' => 'Transaction introuvable',
+                'data'    => [],
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+        }
         if (Monetbil::STATUS_SUCCESS == $payment_status) {
             // Successful payment!
             model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::VALIDE)->update();
@@ -536,7 +547,7 @@ class PaiementsController extends ResourceController
         }
 
         /** @todo Line to remove */
-        file_put_contents(WRITEPATH . '/BillContent/' . date('Y-m-d') . 'txt', json_encode([
+        file_put_contents(WRITEPATH . '/BillContent/' . date('Y-m-d') . '.txt', json_encode([
             'received data' => Monetbil::getPost()
         ]));
         // Received
