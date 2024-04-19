@@ -30,6 +30,33 @@ class PaiementsController extends ResourceController
 
     protected $helpers = ['Modules\Documents\Documents', 'Modules\Images\Images', 'text'];
 
+    public function index($identifier = null)
+    {
+        if ($identifier) {
+            if (!auth()->user()->inGroup('administrateur')) {
+                $response = [
+                    'statut' => 'no',
+                    'message' => 'Action non authorisée pour ce profil.',
+                ];
+                return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+            }
+            $identifier = $this->getIdentifier($identifier, 'id');
+            $utilisateur = model("UtilisateursModel")->where($identifier['name'], $identifier['value'])->first();
+        } else {
+            $utilisateur = $this->request->utilisateur;
+        }
+        $paiements = model("PaiementsModel")->where("auteur_id", $utilisateur->id)
+            ->orderBy('dateCreation', 'desc')
+            ->findAll();
+
+        $response = [
+            'statut'  => 'ok',
+            'message' => count($paiements) . ' paiement(s) trouvée(s)',
+            'data'    => $paiements,
+        ];
+        return $this->sendResponse($response);
+    }
+
     public function applyAssurReduction()
     {   /* NB: Une réduction ne peut être appliquée que sur les produits de son auteur */
         /*
@@ -154,6 +181,7 @@ class PaiementsController extends ResourceController
      * après avoir initié la transaction.        
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
+     * @todo remplacer l'opérateur par le mode, à partir duquel nous pourrons avoir l'opérateur en bd.
      */
     public function InitiateAssurPayment()
     {
@@ -324,26 +352,31 @@ class PaiementsController extends ResourceController
          * @done
          */
         $transactInfo = new TransactionEntity([
-            "code"          => random_string('alnum', 10),
-            "motif"         => "Paiement Souscription $souscription->code",
-            "pay_option_id" => $payOption->id,
-            "prix_total"    => $prixToPay,
-            "tva_taux"      => 0, //$tva->taux,
-            "valeur_tva"    => 0, //$prixTVA,
-            "net_a_payer"   => $prixToPayNet,
-            "avance"        => $avance,
-            "reste_a_payer" => $prixToPayNet - $avance,
-            "etat"          => TransactionEntity::INITIE,
+            "code"            => random_string('alnum', 10),
+            "motif"           => "Paiement Souscription $souscription->code",
+            "beneficiaire_id" => $souscription->souscripteur_id,
+            "pay_option_id"   => $payOption->id,
+            "prix_total"      => $prixToPay,
+            "tva_taux"        => 0, //$tva->taux,
+            "valeur_tva"      => 0, //$prixTVA,
+            "net_a_payer"     => $prixToPayNet,
+            "avance"          => $avance,
+            "reste_a_payer"   => $prixToPayNet - $avance,
+            "etat"            => TransactionEntity::INITIE,
         ]);
         $transactInfo->id = model("TransactionsModel")->insert($transactInfo);
         model("TransactionLignesModel")->insert(['transaction_id' => $transactInfo->id, 'ligne_id' => $ligneInfo->id]);
         model("TransactionsModel")->db->transCommit();
         // 3- On initie le paiement,
+        $operateurId = model("PaiementModesModel")->where('operateur', $input['operateur'])->findColumn('id')[0];
         $paiementInfo = array(
-            'code'    => random_string('alnum', 10),
-            'montant' => $avance,
-            'statut'  => PaiementEntity::EN_COURS,
+            'code'      => random_string('alnum', 10),
+            'montant'   => $avance,
+            'statut'    => PaiementEntity::EN_COURS,
+            'mode_id'   => $operateurId,
+            'auteur_id' => $this->request->utilisateur->id,
         );
+        model("PaiementsModel")->insert($paiementInfo);
 
         // 4- Mise à jour de la souscription
         /** Cette étape est déplacée dans la gestion de la réponse de l'API. */
@@ -519,10 +552,10 @@ class PaiementsController extends ResourceController
             model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::VALIDE)->update();
             $message = "Paiement Réussi.";
             $code = ResponseInterface::HTTP_OK;
-            if ($transactInfo['reste_a_payer'] <= 0) {
-                model("TransactionsModel")->update($transactInfo['id'], ['etat' => TransactionEntity::TERMINE]);
+            if ($transactInfo->reste_a_payer <= 0) {
+                model("TransactionsModel")->update($transactInfo->id, ['etat' => TransactionEntity::TERMINE], ['transaction_id' => $transactInfo->id]);
             } else {
-                model("TransactionsModel")->update($transactInfo['id'], ['etat' => TransactionEntity::EN_COURS]);
+                model("TransactionsModel")->update($transactInfo->id, ['etat' => TransactionEntity::EN_COURS], ['transaction_id' => $transactInfo->id]);
             }
             $souscription = model("SouscriptionsModel")->where("code", $item_ref)->first();
             $duree = model("AssurancesModel")->where('id', $idAssurance)->findColumn('duree')[0];

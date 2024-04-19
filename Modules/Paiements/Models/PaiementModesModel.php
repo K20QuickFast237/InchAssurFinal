@@ -3,21 +3,20 @@
 namespace Modules\Paiements\Models;
 
 use CodeIgniter\Model;
-use Modules\Paiements\Entities\PaiementEntity;
 
-class PaiementsModel extends Model
+class PaiementModesModel extends Model
 {
-    protected $table            = 'paiements';
+    protected $table            = 'paiement_modes';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
-    protected $returnType       = PaiementEntity::class;
+    protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ["code", "montant", "statut", "mode_id", "auteur_id"];
+    protected $allowedFields    = ["nom", "image_id", "description", "operateur", "transaction_id"];
 
 
     // Dates
-    protected $useTimestamps = true;
+    protected $useTimestamps = false;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'dateCreation';
     protected $updatedField  = 'dateModification';
