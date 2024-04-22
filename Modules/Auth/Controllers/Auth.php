@@ -133,7 +133,7 @@ class Auth extends BaseController
             return $this->sendResponse($response, ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
         }
         $response = [
-            'status'  => 'ok',
+            'statut'  => 'ok',
             'message' => 'Un mail d\'activation à été envoyé dans votre boite mail',
             'token'   => $jwt,
         ];
@@ -209,7 +209,7 @@ class Auth extends BaseController
             $response = [
                 'statut'  => 'ok',
                 'message' => 'confirmation validée',
-                'token'   => $JWTmanager->generateToken($user),
+                'token'   => $JWTmanager->generateToken(auth()->user()),
             ];
             return $this->sendResponse($response);
         }
@@ -1061,7 +1061,7 @@ class Auth extends BaseController
                             'action_id'    => $actionID,
                             'profil_id'    => $profilID,
                             'liste_action' => $listeAction,
-                            'status'       => 1,
+                            'statut'       => 1,
                         ];
                         $profilActionModel->insert($insert);
                     }

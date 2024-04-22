@@ -15,10 +15,10 @@ class PaiementModes extends Migration
         $this->db->simpleQuery("
         CREATE TABLE `paiement_modes` (
             `id` int unsigned NOT NULL AUTO_INCREMENT,
-            `nom` varchar(75) COLLATE utf8mb4_bin NOT NULL,
+            `nom` varchar(75) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
             `image_id` int unsigned DEFAULT NULL,
-            `description` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL,
-            `real_name` varchar(75) COLLATE utf8mb4_bin DEFAULT NULL,
+            `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+            `operateur` varchar(75) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
             PRIMARY KEY (`id`),
             KEY `paiement_mode_image_foreign_idx` (`image_id`),
             KEY `paiement_mode_nom_foreign` (`nom`),
