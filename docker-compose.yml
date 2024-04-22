@@ -1,19 +1,27 @@
 # Orchestre les containers docker pour le projet.
 # Définit les services et volumeas nécessaires au bon fonctionnement de l'app
 
-# défini la version du fichier docker-compose
-version: "1"
+# défini la version de la spécification yaml
+version: "3"
 # Défini les services (containers) que compose l'apllication
 services:
   web:
     build: dockerfiles/php-apache
     ports:
-      - "8383:80"
+      - "80:80"
+    volumes:
+      - .:/var/www/InchAssurFinal/
 
   db:
     build: dockerfiles/mysql
     ports:
-      - "3310:3306"
+      - "3306:3306"
     # fait le mapping de dossiers Dossier_local:Dossier_container en tant que volume
     volumes:
-      - /home/ubuntu/codeigniter-project/mydatabase/:/var/lib/mysql
+      # - /home/docker/inchassur/inchassurdb/:/var/lib/mysql
+      # indicate the volume for data persistence
+      - mysqldata:/var/lib/mysql
+      # indicate the host location of persisted data
+      - ./database/db:/var/lib/mysql
+volumes:
+  mysqldata:

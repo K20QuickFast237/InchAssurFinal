@@ -17,6 +17,7 @@ writable/session/*
 writable/debugbar/*
 writable/logs/*
 .env
+database/*
 
 C:\newinchassur\Modules\Auth_Initial
 C:\newinchassur\Modules\Documents
