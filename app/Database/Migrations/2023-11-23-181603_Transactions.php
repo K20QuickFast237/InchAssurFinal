@@ -18,6 +18,7 @@ class Transactions extends Migration
             `code` varchar(75) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
             `motif` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
             `pay_option_id` int unsigned NOT NULL,
+            `beneficiaire_id` int unsigned DEFAULT NULL,
             `prix_total` float NOT NULL,
             `tva_taux` float unsigned NOT NULL DEFAULT '0',
             `valeur_tva` float NOT NULL,
@@ -29,9 +30,11 @@ class Transactions extends Migration
             PRIMARY KEY (`id`),
             KEY `transact_pay_opt_id_foreign_idx` (`pay_option_id`),
             KEY `transact_tva_taux_foreign` (`tva_taux`),
+            KEY `transact_benef_foreign_idx` (`beneficiaire_id`),
+            CONSTRAINT `transact_benef_foreign` FOREIGN KEY (`beneficiaire_id`) REFERENCES `utilisateurs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
             CONSTRAINT `transact_pay_opt_id_foreign` FOREIGN KEY (`pay_option_id`) REFERENCES `paiement_options` (`id`),
             CONSTRAINT `transact_tva_taux_foreign` FOREIGN KEY (`tva_taux`) REFERENCES `tvas` (`taux`) ON DELETE RESTRICT ON UPDATE CASCADE
-          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='une transaction est l''équivalent d''une facture';
+          ) ENGINE=InnoDB AUTO_INCREMENT=39 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='une transaction est l''équivalent d''une facture';
         ");
     }
 

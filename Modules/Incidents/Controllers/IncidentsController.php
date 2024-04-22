@@ -10,14 +10,44 @@ use App\Traits\ErrorsDataTrait;
 use Modules\Incidents\Entities\IncidentsEntity;
 use Modules\Messageries\Entities\ConversationEntity;
 use CodeIgniter\Database\Exceptions\DataException;
+use Modules\Messageries\Entities\MessageEntity;
 
 class IncidentsController extends BaseController
 {
     use ResponseTrait;
     use ControllerUtilsTrait;
     use ErrorsDataTrait;
-
     protected $helpers = ['Modules\Documents\Documents', 'Modules\Images\Images', 'text'];
+
+    /**
+     * Renvoie tous les types de déclarations d'incident actifs.
+     *
+     * @param  boolean $active specifie si seuls les types de déclarations actives doivent être renvoyées
+     * @return ResponseInterface The HTTP response.
+     */
+    public function getActiveTypeIncidents($active = true)
+    {
+        if ($active) {
+            $typeIncidents = model("IncidentTypesModel")
+                ->select("id as idTypeIncident, nom, description")
+                ->where("statut", IncidentsEntity::ACTIF)
+                ->findAll();
+        } else {
+            $typeIncidents = model("IncidentTypesModel")->select("id as idTypeIncident, nom, description")->findAll();
+        }
+
+        $typeIncidents = array_map(function ($s) {
+            $s["idTypeIncident"] = (int)$s["idTypeIncident"];
+            return $s;
+        }, $typeIncidents);
+
+        $response = [
+            'status' => 'ok',
+            'message' => count($typeIncidents) ? 'Type(s) d\'incident(s) trouvé(s).' : 'Aucun type d\'incident trouvé.',
+            'data' => $typeIncidents ?? [],
+        ];
+        return $this->sendResponse($response);
+    }
 
     /**
      * Renvoie tous les incidents actifs de l'utilisateur identifié.
@@ -42,10 +72,11 @@ class IncidentsController extends BaseController
         }
         $incidents = model("IncidentsModel")->where("auteur_id", $utilisateur->id)
             ->where("etat", IncidentsEntity::ACTIF)
+            ->orderBy('id', "DESC")
             ->findAll();
 
         $response = [
-            'status' => 'ok',
+            'statut' => 'ok',
             'message' => count($incidents) ? 'Incidents déclarés.' : 'Aucun incident déclaré.',
             'data' => $sinistres ?? [],
         ];
@@ -77,7 +108,7 @@ class IncidentsController extends BaseController
         }
 
         $response = [
-            'status' => 'ok',
+            'statut' => 'ok',
             'message' => count($incidents) ? 'Incidents trouvés.' : 'Aucun Incident trouvé.',
             'data' => $incidents ?? [],
         ];
@@ -162,7 +193,7 @@ class IncidentsController extends BaseController
         // Ouverture de la conversation ou réutilisation
         $codeIncident = $this->generateCodeIncident();
         $conversationInfo = [
-            "nom"     => "Reclamations-$codeIncident",
+            "nom"     => "Incident-$codeIncident",
             "description" => "Échanges pour la résolution de l'incident $codeIncident",
             "type" => ConversationEntity::TYPE_INCIDENT,
         ];
@@ -179,6 +210,28 @@ class IncidentsController extends BaseController
             "conversation_id" => $convId,
         ];
         $incidentId = model("IncidentsModel")->insert($incidentInfo);
+        /** @todo ajout du message d'incident */
+        /* Message du déclarant: description de son incident, message de l'admin: merci d'avoir soumis votre déclaration, 
+        nous démarrons son traitement. */
+        $messageClient = [
+            'from_user_id' => $declarant->id,
+            'to_conversation_id' => $convId,
+            'msg_text'    => $input['description'],
+            'dateCreation' => date('Y-m-d H:i:s'),
+            'etat'        => MessageEntity::ACTIVE_STATE,
+            'statut'      => MessageEntity::READED,
+        ];
+        model("MessagesModel")->insert($messageClient);
+        $messageAdmin = [
+            'from_user_id' => 16,
+            /** @todo Changer pour mettre l'id adéquat. */
+            'to_conversation_id' => $convId,
+            'msg_text'    => "Merci d'avoir soumis votre déclaration, nous démarrons son traitement.",
+            'dateCreation' => date('Y-m-d H:i:s'),
+            'etat'        => MessageEntity::ACTIVE_STATE,
+            'statut'      => MessageEntity::READED,
+        ];
+        model("MessagesModel")->insert($messageAdmin);
         model("IncidentsModel")->db->transCommit();
 
         // Enregistrer les fichiers joints au cas échéant

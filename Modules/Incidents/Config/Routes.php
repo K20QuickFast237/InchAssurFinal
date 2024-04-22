@@ -4,6 +4,7 @@ namespace Modules\Incidents\Config;
 
 
 $routes->get('allIncidents', '\Modules\Incidents\Controllers\IncidentsController::getAllIncidents');
+$routes->get('incidentTypes', '\Modules\Incidents\Controllers\IncidentsController::getActiveTypeIncidents');
 $routes->post('incidents/(:segment)', '\Modules\Incidents\Controllers\IncidentsController::update/$1');
 
 $routes->group('incidents', ['namespace' => 'Modules\Incidents\Controllers'], function ($routes) {

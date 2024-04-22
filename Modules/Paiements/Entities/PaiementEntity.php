@@ -10,15 +10,16 @@ class PaiementEntity extends Entity
     public static $statuts = ["Echoué", "Validé", "Annulé", "En Cours"];
 
     protected $datamap  = [
-        'idPaiement' => 'id',
-        'idMode'     => 'mode_id',
-        'idAuteur'   => 'auteur_id',
+        'idPaiement'    => 'id',
+        'idMode'        => 'mode_id',
+        'idAuteur'      => 'auteur_id',
+        'idTransaction' => 'transaction_id',
     ];
 
     // Defining a type with parameters
     protected $casts = [
         'id'      => "integer",
-        'montant' => "float",
+        'montant' => "?float",
         'statut'  => "etatcaster[Echoué,Validé,Annulé,En Cours]",
     ];
 

@@ -42,6 +42,7 @@ class SinistresController extends BaseController
         }
         $sinistres = model("SinistresModel")->where("auteur_id", $utilisateur->id)
             ->where("etat", SinistresEntity::ACTIF)
+            ->orderBy('id', 'Desc')
             ->findAll();
 
         $sinistres = array_map(function ($s) {
@@ -51,7 +52,7 @@ class SinistresController extends BaseController
         }, $sinistres);
 
         $response = [
-            'status' => 'ok',
+            'statut' => 'ok',
             'message' => count($sinistres) ? 'Sinistres déclarés.' : 'Aucun sinistre déclaré.',
             'data' => $sinistres ?? [],
         ];
@@ -89,7 +90,7 @@ class SinistresController extends BaseController
         }, $sinistres);
 
         $response = [
-            'status' => 'ok',
+            'statut' => 'ok',
             'message' => count($sinistres) ? 'Sinistres trouvés.' : 'Aucun sinistre trouvé.',
             'data' => $sinistres ?? [],
         ];
@@ -119,8 +120,8 @@ class SinistresController extends BaseController
         }, $typeSinistres);
 
         $response = [
-            'status' => 'ok',
-            'message' => count($typeSinistres) ? 'Type(s) de sinistre(s) trouvé(s).' : 'Aucun type de sinistre trouvé.',
+            'statut' => 'ok',
+            'message' => count($typeSinistres) ? 'Type(s) de sinistre(s) trouvé(s).' : 'Aucun t ype de sinistre trouvé.',
             'data' => $typeSinistres ?? [],
         ];
         return $this->sendResponse($response);
