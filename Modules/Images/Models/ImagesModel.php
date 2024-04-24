@@ -30,6 +30,6 @@ class ImagesModel extends DocumentsModel
 
     public function getMultiSimplified($ids)
     {
-        return $this->select("id, uri")->whereIn('id', $ids)->findAll();
+        return $this->select("id, uri")->whereIn('id', (array)$ids)->findAll();
     }
 }

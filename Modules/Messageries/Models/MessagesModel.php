@@ -38,4 +38,10 @@ class MessagesModel extends Model
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
+
+    public function showData($data)
+    {
+        print_r($data);
+        exit;
+    }
 }

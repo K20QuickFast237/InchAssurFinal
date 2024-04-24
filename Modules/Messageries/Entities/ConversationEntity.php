@@ -96,12 +96,41 @@ class ConversationEntity extends Entity
                 ->where("to_conversation_id", $this->attributes['id'])
                 // ->where("messages.id", $this->attributes['id'])
                 ->findAll();
-            // $this->attributes['messages'] = $messages;
-            foreach ($messages as $msg) {
-                // $this->attributes['messages'][] = new MessageEntity($msg);
-                $this->attributes['messages'][] = new MessageEntity($msg->toArray());
+
+            $list   = [];
+            foreach ($messages as $key => $msg) {
+                if (isset($list[$msg->id])) {
+                    $messages[$list[$msg->id]]->image_id = array_merge($messages[$list[$msg->id]]->image_id, $msg->image_id);
+                    $messages[$list[$msg->id]]->document_id = array_merge($messages[$list[$msg->id]]->document_id, $msg->document_id);
+
+                    unset($messages[$key]);
+                    continue;
+                }
+                $list[$msg->id] = $key;
             }
+
+            $this->attributes['messages'] = $messages;
         }
         return $this->attributes['messages'] ?? null;
     }
+    /*  First version no more used
+        public function getMessages()
+        {
+            if (!isset($this->attributes['messages'])) {
+                $messages = model("MessagesModel")
+                    ->select("messages.*, message_images.image_id, message_documents.document_id")
+                    ->join("message_images", "messages.id = message_images.message_id", "left")
+                    ->join("message_documents", "messages.id = message_documents.message_id", "left")
+                    ->where("to_conversation_id", $this->attributes['id'])
+                    // ->where("messages.id", $this->attributes['id'])
+                    ->findAll();
+                // $this->attributes['messages'] = $messages;
+                foreach ($messages as $msg) {
+                    // $this->attributes['messages'][] = new MessageEntity($msg);
+                    $this->attributes['messages'][] = new MessageEntity($msg->toArray());
+                }
+            }
+            return $this->attributes['messages'] ?? null;
+        }
+    */
 }

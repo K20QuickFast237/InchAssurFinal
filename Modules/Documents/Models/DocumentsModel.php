@@ -45,4 +45,9 @@ class DocumentsModel extends Model
     {
         return $this->select("id, uri, titre")->where('id', $id)->first();
     }
+
+    public function getMultiSimplified($ids)
+    {
+        return $this->select("id, uri, titre")->whereIn('id', (array)$ids)->findAll();
+    }
 }

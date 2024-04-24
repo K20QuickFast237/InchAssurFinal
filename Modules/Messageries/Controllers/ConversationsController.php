@@ -394,7 +394,7 @@ class ConversationsController extends BaseController
             ];
             if (isset($input['message'])) {
                 $msgInfo["msg_text"] = $input['message'];
-                $data['message'] = $input['message'];
+                $data['message'] = (string)htmlspecialchars($input['message'] ?? ''); //$input['message'];
             }
             $msgId = model("MessagesModel")->insert($msgInfo);
 
