@@ -406,11 +406,13 @@ class ConversationsController extends BaseController
             }
 
             foreach ($documents as $doc) {
+                // $title = str_replace(' ', '-', $doc->getClientName());
                 $title = $doc->getClientName();
                 $docInfo = getDocInfo($title, $doc, 'uploads/messages/documents/');
+                $docInfo['titre'] = $title;
                 $docID   = model('DocumentsModel')->insert($docInfo);
                 model("MessageDocumentsModel")->insert(["message_id" => $msgId, "document_id" => $docID]);
-                $data['documents'][] = ['idDocument' => $docID, 'url' => base_url($docInfo['uri'])];
+                $data['documents'][] = ['idDocument' => $docID, 'url' => base_url($docInfo['uri']), 'titre' => $title];
             }
         } catch (\Throwable $th) {
             model("ConversationsModel")->db->transRollback();

@@ -26,7 +26,7 @@ class MessageEntity extends Entity
         'idMessage'      => 'id',
         'images'         => "image_id",
         'documents'      => "document_id",
-        // 'message'        => "msg_text",
+        'message'        => "msg_text",
         'idConversation' => "to_conversation_id",
         'idAuteur'       => "from_user_id",
     ];

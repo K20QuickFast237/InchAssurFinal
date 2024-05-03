@@ -266,12 +266,13 @@ class AssurancesController extends ResourceController
     {
         $rules = [
             'nom'              => [
-                'rules'  => 'if_exist|regex_match[/[0-9a-z áàéèíóúùòç_\'-]/i]|min_length[3]|is_unique[assurances.nom]',
+                // 'rules'  => 'if_exist|regex_match[/[0-9a-z áàéèíóúùòç_\'-]/i]|min_length[3]|is_unique[assurances.nom]',
+                'rules'  => 'if_exist|regex_match[/[0-9a-z áàéèíóúùòç_\'-]/i]|min_length[3]',
                 'errors' => [
                     'min_length'  => 'le nom est trop court',
                     'required'    => 'Le nom est requis',
                     'regex_match' => 'Le nom ne peut contenir que des lettres, chiffres, espaces et les ponctuations simples.',
-                    'is_unique'   => 'une assurance ayant ce nom existe déjà',
+                    // 'is_unique'   => 'une assurance ayant ce nom existe déjà',
                 ],
             ],
             'prix'             => [
@@ -318,13 +319,23 @@ class AssurancesController extends ResourceController
                     'numeric'  => 'Valeur de {field} inappropriée.'
                 ],
             ],
-            'piecesAJoindre'    => 'if_exist',
-            'piecesAJoindre.*'  => 'if_exist|string|is_not_unique[document_titres.nom]',
+            'piecesAJoindre'   => 'if_exist',
+            'piecesAJoindre.*' => 'if_exist|string|is_not_unique[document_titres.nom]',
+            'image'            => [
+                'rules'  => 'if_exist|uploaded[image]',
+                'errors' => ['uploaded' => 'Une image est requise'],
+            ],
         ];
 
         $input = $this->getRequestInput($this->request);
         $model = model("AssurancesModel");
         $assur = $model->find($id);
+        $defaultImg = $this->request->getFile("image");
+        if ($defaultImg) {
+            model("AssuranceImagesModel")->where("assurance_id", $assur->id)->where("image_id", $assur->image->id)->delete();
+            $assur->image = saveImage($defaultImg, 'uploads/assurances/images/');
+            model("AssuranceImagesModel")->insert(["assurance_id" => $assur->id, "image_id" => $assur->image]);
+        }
         try {
             if (!$this->validate($rules)) {
                 $hasError = true;
@@ -353,9 +364,9 @@ class AssurancesController extends ResourceController
         }
 
         $response = [
-            'statut'        => 'ok',
-            'message'       => 'Assurance mise à jour.',
-            'data'          => $assur,
+            'statut'  => 'ok',
+            'message' => 'Assurance mise à jour.',
+            'data'    => $assur,
         ];
         return $this->sendResponse($response);
     }
@@ -448,6 +459,7 @@ class AssurancesController extends ResourceController
             }
             $model->db->transBegin();
 
+            $model->where("assurance_id", (int)$id)->delete();
             foreach ($input['piecesAJoindre'] as $idpiece) {
                 $model->insert(["assurance_id" => (int)$id, "piece_id" => (int)$idpiece]);
             }
@@ -493,6 +505,7 @@ class AssurancesController extends ResourceController
             }
             $model->db->transBegin();
 
+            $model->where("assurance_id", (int)$id)->delete();
             foreach ($input['services'] as $idService) {
                 $model->insert(["assurance_id" => (int)$id, "service_id" => (int)$idService]);
             }
@@ -703,6 +716,7 @@ class AssurancesController extends ResourceController
             }
             $model->db->transBegin();
 
+            $model->where("assurance_id", (int)$id)->delete();
             foreach ($input['reductions'] as $idReduction) {
                 $model->insert(["assurance_id" => (int)$id, "reduction_id" => (int)$idReduction]);
             }
@@ -775,6 +789,7 @@ class AssurancesController extends ResourceController
             }
             $model->db->transBegin();
 
+            $model->where("assurance_id", (int)$id)->delete();
             foreach ($input['questions'] as $idQuestion) {
                 $model->insert(["assurance_id" => (int)$id, "question_id" => (int)$idQuestion]);
             }
@@ -839,6 +854,7 @@ class AssurancesController extends ResourceController
             }
             $model->db->transBegin();
 
+            $model->where("assurance_id", (int)$id)->delete();
             foreach ($input['payOptions'] as $idPayOption) {
                 $model->insert(["assurance_id" => (int)$id, "paiement_option_id" => (int)$idPayOption]);
             }
@@ -937,6 +953,18 @@ class AssurancesController extends ResourceController
             ];
             return $this->sendResponse($response, $errorsData['code']);
         }
+    }
+
+    public function delAssurDocument($assurId, $docID)
+    {
+        $model = model("AssuranceDocumentsModel");
+        $model->where("assurance_id", $assurId)->where("document_id", $docID)->delete();
+        $response = [
+            'statut'  => 'ok',
+            'message' => "Document(s) supprimé(s) à l'assurance.",
+            'data'    => [],
+        ];
+        return $this->sendResponse($response);
     }
 
     /**
@@ -1150,6 +1178,44 @@ class AssurancesController extends ResourceController
         $response = [
             'statut'  => 'ok',
             'message' => "Assurance associée à la(aux) sous-catégorie(s).",
+            'data'    => [],
+        ];
+        return $this->sendResponse($response);
+    }
+
+    public function disactivateAssur($id)
+    {
+        if (!auth()->user()->can('assurances.create')) {
+            $response = [
+                'statut' => 'no',
+                'message' => 'Action non authorisée pour ce profil.',
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+        }
+        $identifier = $this->getIdentifier($id, 'id');
+        model("AssurancesModel")->where($identifier['name'], $identifier['value'])->set('etat', ProduitsEntity::INACTIF)->update();
+        $response = [
+            'statut'  => 'ok',
+            'message' => "Assurance desactivée.",
+            'data'    => [],
+        ];
+        return $this->sendResponse($response);
+    }
+
+    public function activateAssur($id)
+    {
+        if (!auth()->user()->can('assurances.create')) {
+            $response = [
+                'statut' => 'no',
+                'message' => 'Action non authorisée pour ce profil.',
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+        }
+        $identifier = $this->getIdentifier($id, 'id');
+        model("AssurancesModel")->where($identifier['name'], $identifier['value'])->set('etat', ProduitsEntity::ACTIF)->update();
+        $response = [
+            'statut'  => 'ok',
+            'message' => "Assurance activée.",
             'data'    => [],
         ];
         return $this->sendResponse($response);
