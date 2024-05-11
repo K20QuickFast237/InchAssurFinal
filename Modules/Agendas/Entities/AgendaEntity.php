@@ -22,8 +22,8 @@ class AgendaEntity extends Entity
 
     // Defining a type with parameters
     protected $casts = [
-        'id'                => "integer",
-        'statut'            => "etatcaster['Indisponible','Disponible']",
+        'id'     => "integer",
+        'statut' => "etatcaster['Indisponible','Disponible']",
     ];
 
     public function getProprietaireId()

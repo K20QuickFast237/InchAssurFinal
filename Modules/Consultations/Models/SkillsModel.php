@@ -14,7 +14,7 @@ class SkillsModel extends Model
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['nom'];
+    protected $allowedFields    = ['nom', 'description'];
 
     // Dates
     protected $useTimestamps = false;

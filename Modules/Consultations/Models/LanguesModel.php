@@ -3,6 +3,7 @@
 namespace Modules\Consultations\Models;
 
 use CodeIgniter\Model;
+use Modules\Consultations\Entities\LangueEntity;
 
 class LanguesModel extends Model
 {
@@ -11,7 +12,7 @@ class LanguesModel extends Model
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $insertID         = 0;
-    protected $returnType       = 'array';
+    protected $returnType       = LangueEntity::class;
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = ['nom'];

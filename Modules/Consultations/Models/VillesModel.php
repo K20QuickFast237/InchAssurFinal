@@ -3,6 +3,7 @@
 namespace Modules\Consultations\Models;
 
 use CodeIgniter\Model;
+use Modules\Consultations\Entities\VilleEntity;
 
 class VillesModel extends Model
 {
@@ -11,7 +12,7 @@ class VillesModel extends Model
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $insertID         = 1;
-    protected $returnType       = 'array';
+    protected $returnType       = VilleEntity::class;
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = ['nom'];

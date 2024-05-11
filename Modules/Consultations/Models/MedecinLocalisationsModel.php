@@ -14,7 +14,7 @@ class MedecinLocalisationsModel extends Model
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['localisation_id', 'medecin_id'];
+    protected $allowedFields    = ['localisation_id', 'medecin_id', 'isDefault'];
 
     // Dates
     protected $useTimestamps = false;

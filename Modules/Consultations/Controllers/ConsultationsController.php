@@ -15,23 +15,102 @@ class ConsultationsController extends BaseController
     use ResponseTrait;
     use ErrorsDataTrait;
 
-    public function GetVille()
-    {
-        // $ville = new Ville();
-        // $data  = json_decode($ville->datavill,true) ;
-        // return $this->getResponse($data);
 
-        $villeModel = new VilleModel();
-        $data = $villeModel->asArray()->select('id_ville as id, nom as ville')->findAll() ?? [];
+    public function getVilles()
+    {
+        $villes = model("VillesModel")->findAll() ?? [];
 
         $response = [
             'statut'  => 'ok',
-            'message' => count($data) . ' ville(s) trouvée(s).',
-            'data'    => $data,
-            'token'   => $this->request->newToken ?? null,
+            'message' => count($villes) . ' ville(s) trouvée(s).',
+            'message' => (count($villes) ? count($villes) : 'Aucune') . ' ville(s) trouvé(s).',
+            'data'    => $villes,
+        ];
+        return $this->sendResponse($response);
+    }
+
+    /**
+     * Ajoute une localisation de consultation pour un médecin
+     * réservée aux médecins uniquement
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    public function addLocalisation()
+    {
+        $rules = [
+            'etablissement' => [
+                'rules' => 'required|alpha_numeric_punct',
+                'errors' => ['required' => 'Précisez l\'établissement.', 'alpha_numeric_punct' => 'Valeur inappropriée.']
+            ],
+            'adresse'      => [
+                'rules' => 'required|alpha_numeric_punct',
+                'errors' => ['required' => 'Précisez l\'adresse.', 'alpha_numeric_punct' => 'Valeur inappropriée.']
+            ],
+            'ville'        => [
+                'rules' => 'required|numeric',
+                'errors' => ['required' => 'Précisez la ville.', 'numeric' => 'Valeur inappropriée.']
+            ],
+            'canal'        => [
+                'rules' => 'required|numeric',
+                'errors' => ['required' => 'Précisez le canal.', 'numeric' => 'La valeur de canal inconnue.']
+            ],
+            'isdefault'    => [
+                'rules' => 'if_exist|in_list[0,1]',
+                'errors' => ['in_list' => 'Valeur inconnue.']
+            ],
+            // 'competences'  => ['rules' => 'required',
+            //                    'errors' => ['required' => 'Précisez au moins une compétence.']
+            //             ],
+        ];
+        if (!$this->validate($rules)) {
+            $response = [
+                'statut' => 'no',
+                'message' => $this->validator->getErrors(),
+            ];
+            return $this->getResponse($response, ResponseInterface::HTTP_BAD_REQUEST);
+        }
+
+        $input = $this->getRequestInput($this->request);
+
+        $userModel = new UtilisateurModel();
+        $user      = $userModel->asArray()->where('email', $this->request->userEmail)->first();
+        $userID    = $user['id_utilisateur'];
+
+        // $skillsModel  = new SkillsModel();
+        $medCanModel          = new MedecinCanauxModel();
+        $canal['canal_id']    = (int)$input['canal'];
+        $canal['user_med_id'] = $userID;
+        try {
+            $medCanModel->insert($canal);
+        } catch (\Throwable $th) {
+        }
+        // $canaux       = MedecincanneauxModel::getcaneauxList();
+        // $medCanModel  = new MedecincanneauxModel();
+        // $canaux       = MedecincanneauxModel::getcaneauxList();
+
+        $medLocModel           = new MedecinLocalisationModel();
+        $data['etablissement'] = htmlspecialchars($input['etablissement']);
+        $data['adresse']       = htmlspecialchars($input['adresse']);
+        $data['user_med_id']   = $userID;
+        $data['ville_id']      = (int)$input['ville'];
+        // $data['type'] = $canaux[(int)$input['canal']-1]['name'];
+        // $data['skills']    = json_encode($skillsModel->getbulkSkillsNames($input['competences']));
+        $data['default'] = isset($input['isdefault']) ? (int)$input['isdefault'] : 0;
+        $medLocModel->insert($data);
+
+
+        $response = [
+            'statut'  => 'ok',
+            'message' => 'Adresse Ajoutée.',
+            'token'   => $this->request->newToken ?? '',
         ];
         return $this->getResponse($response);
     }
+
+
+
+
+    /****************************************************************/
 
     /**
      * getMotifs
@@ -1169,86 +1248,6 @@ class ConsultationsController extends BaseController
 
     }
     */
-
-    /**
-     * addAdress
-     * 
-     * Ajoute une adresse de consultation pour un médecin
-     * réservée aux médecins uniquement
-     *
-     * @return \CodeIgniter\HTTP\ResponseInterface
-     */
-    public function addAdress()
-    {
-        $rules = [
-            'etablissement' => [
-                'rules' => 'required|alpha_numeric_punct',
-                'errors' => ['required' => 'Précisez l\'établissement.', 'alpha_numeric_punct' => 'Valeur inappropriée.']
-            ],
-            'adresse'      => [
-                'rules' => 'required|alpha_numeric_punct',
-                'errors' => ['required' => 'Précisez l\'adresse.', 'alpha_numeric_punct' => 'Valeur inappropriée.']
-            ],
-            'ville'        => [
-                'rules' => 'required|numeric',
-                'errors' => ['required' => 'Précisez la ville.', 'numeric' => 'Valeur inappropriée.']
-            ],
-            'canal'        => [
-                'rules' => 'required|numeric',
-                'errors' => ['required' => 'Précisez le canal.', 'numeric' => 'La valeur de canal inconnue.']
-            ],
-            'isdefault'    => [
-                'rules' => 'if_exist|in_list[0,1]',
-                'errors' => ['in_list' => 'Valeur inconnue.']
-            ],
-            // 'competences'  => ['rules' => 'required',
-            //                    'errors' => ['required' => 'Précisez au moins une compétence.']
-            //             ],
-        ];
-        if (!$this->validate($rules)) {
-            $response = [
-                'statut' => 'no',
-                'message' => $this->validator->getErrors(),
-            ];
-            return $this->getResponse($response, ResponseInterface::HTTP_BAD_REQUEST);
-        }
-
-        $input = $this->getRequestInput($this->request);
-
-        $userModel = new UtilisateurModel();
-        $user      = $userModel->asArray()->where('email', $this->request->userEmail)->first();
-        $userID    = $user['id_utilisateur'];
-
-        // $skillsModel  = new SkillsModel();
-        $medCanModel          = new MedecinCanauxModel();
-        $canal['canal_id']    = (int)$input['canal'];
-        $canal['user_med_id'] = $userID;
-        try {
-            $medCanModel->insert($canal);
-        } catch (\Throwable $th) {
-        }
-        // $canaux       = MedecincanneauxModel::getcaneauxList();
-        // $medCanModel  = new MedecincanneauxModel();
-        // $canaux       = MedecincanneauxModel::getcaneauxList();
-
-        $medLocModel           = new MedecinLocalisationModel();
-        $data['etablissement'] = htmlspecialchars($input['etablissement']);
-        $data['adresse']       = htmlspecialchars($input['adresse']);
-        $data['user_med_id']   = $userID;
-        $data['ville_id']      = (int)$input['ville'];
-        // $data['type'] = $canaux[(int)$input['canal']-1]['name'];
-        // $data['skills']    = json_encode($skillsModel->getbulkSkillsNames($input['competences']));
-        $data['default'] = isset($input['isdefault']) ? (int)$input['isdefault'] : 0;
-        $medLocModel->insert($data);
-
-
-        $response = [
-            'statut'  => 'ok',
-            'message' => 'Adresse Ajoutée.',
-            'token'   => $this->request->newToken ?? '',
-        ];
-        return $this->getResponse($response);
-    }
 
     /**
      * delAdress
