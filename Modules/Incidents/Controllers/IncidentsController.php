@@ -190,7 +190,7 @@ class IncidentsController extends BaseController
         }
 
         $input = $this->getRequestInput($this->request);
-        // Ouverture de la conversation ou réutilisation
+        // Ouverture de la conversation
         $codeIncident = $this->generateCodeIncident();
         $conversationInfo = [
             "nom"     => "Incident-$codeIncident",
@@ -210,7 +210,7 @@ class IncidentsController extends BaseController
             "conversation_id" => $convId,
         ];
         $incidentId = model("IncidentsModel")->insert($incidentInfo);
-        /** @todo ajout du message d'incident */
+        /** ajout du message d'incident */
         /* Message du déclarant: description de son incident, message de l'admin: merci d'avoir soumis votre déclaration, 
         nous démarrons son traitement. */
         $messageClient = [

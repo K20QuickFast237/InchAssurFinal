@@ -27,7 +27,7 @@ class Assurances extends Migration
             `listeServices` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
             `assureur_id` int unsigned NOT NULL,
             `categorie_id` int unsigned NOT NULL,
-            `etat` int NOT NULL DEFAULT '1' COMMENT 'definit l''etat du produit (désactivé, actif etc...)',
+            `etat` int NOT NULL DEFAULT '0' COMMENT 'definit l''etat du produit (désactivé, actif etc...)',
             PRIMARY KEY (`id`),
             UNIQUE KEY `nom_UNIQUE` (`nom`),
             KEY `assurances_type_foreign_idx` (`type_id`),

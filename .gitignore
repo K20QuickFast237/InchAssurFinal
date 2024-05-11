@@ -12,6 +12,7 @@ user_guide_src/cilexer/pycilexer.egg-info/*
 
 /tests/
 
+writable
 writable/uploads/*
 writable/session/*
 writable/debugbar/*

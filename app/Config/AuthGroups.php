@@ -99,7 +99,7 @@ class AuthGroups extends ShieldAuthGroups
      */
     public array $matrix = [
 
-        'administrateur' => ["pockets.*", "users.*", "assurances.*", "sinistres.*", "incidents.*", "conversations.*"],
+        'administrateur' => ["pockets.*", "users.*", "assurances.*", "sinistres.*", "incidents.*", "conversations.*", "consultations.*", "agendas.*"],
         'entreprise'     => ["*"],
         'assureur'       => ["*"],
         'medecin'        => ["*"],

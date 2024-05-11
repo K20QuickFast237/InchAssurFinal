@@ -10,6 +10,7 @@ use App\Traits\ErrorsDataTrait;
 use Modules\Assurances\Entities\SinistresEntity;
 use Modules\Messageries\Entities\ConversationEntity;
 use CodeIgniter\Database\Exceptions\DataException;
+use Modules\Messageries\Entities\MessageEntity;
 
 class SinistresController extends BaseController
 {
@@ -256,6 +257,30 @@ class SinistresController extends BaseController
             model("SinistreDocumentsModel")->insert(["sinistre_id" => $sinistreId, "document_id" => $docID]);
         }
 
+        /** ajout du message de sinistre */
+        /* Message du déclarant: description de son sinistre, message de l'admin: merci d'avoir soumis votre déclaration, 
+        nous démarrons son traitement. */
+        $messageClient = [
+            'from_user_id' => $declarant->id,
+            'to_conversation_id' => $convId,
+            'msg_text'    => $input['description'],
+            'dateCreation' => date('Y-m-d H:i:s'),
+            'etat'        => MessageEntity::ACTIVE_STATE,
+            'statut'      => MessageEntity::READED,
+        ];
+        model("MessagesModel")->insert($messageClient);
+        $messageAdmin = [
+            'from_user_id' => 16,
+            /** @todo Changer pour mettre l'id adéquat. */
+            'to_conversation_id' => $convId,
+            'msg_text'    => "Merci d'avoir soumis votre déclaration, nous démarrons son traitement.",
+            'dateCreation' => date('Y-m-d H:i:s'),
+            'etat'        => MessageEntity::ACTIVE_STATE,
+            'statut'      => MessageEntity::READED,
+        ];
+        model("MessagesModel")->insert($messageAdmin);
+        model("IncidentsModel")->db->transCommit();
+
         $response = [
             'statut'  => 'ok',
             'message' => 'Déclaration Enregistrée.',
@@ -282,6 +307,7 @@ class SinistresController extends BaseController
         $rules = [
             'sujet'          => 'if_exist',
             'description'    => 'if_exist',
+            'etat'           => 'if_exist|in_list[Inactif,Actif]',
             'idTypeSinistre' => [
                 'rules'   => 'if_exist|is_not_unique[sinistre_types.id]',
                 'errors'  => ['is_not_unique' => "Le type spécifié n'est pas reconnu.",]
@@ -295,12 +321,14 @@ class SinistresController extends BaseController
 
             $input = $this->getRequestInput($this->request);
 
-            // Ouverture de la conversation ou réutilisation
             $sinistreInfo = [
                 "titre" => $input['sujet'] ?? null,
                 "description" => $input['description'] ?? null,
-                "type_id" => (int)$input["idTypeSinistre"] ?? null,
+                "type_id" => $input["idTypeSinistre"] ?? null,
             ];
+            if (isset($input['etat'])) {
+                $sinistreInfo['etat'] = array_search($input["etat"], ["Inactif", "Actif"]) ? 1 : "Inactif";
+            }
             model("SinistresModel")->update($id, array_filter($sinistreInfo));
         } catch (DataException $de) {
             $response = [

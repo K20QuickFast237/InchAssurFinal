@@ -29,7 +29,7 @@ class AssurancesController extends ResourceController
         }
         /** @todo penser à spécifier certains champs pour la liste vue que le listing doit être avec le strict nécessaire */
         $data = model("AssurancesModel")->where("assureur_id", $utilisateur->id)
-            ->where("etat", ProduitsEntity::ACTIF)
+            // ->where("etat", ProduitsEntity::ACTIF)
             ->findAll();
         $response = [
             'statut' => 'ok',
@@ -793,6 +793,7 @@ class AssurancesController extends ResourceController
             foreach ($input['questions'] as $idQuestion) {
                 $model->insert(["assurance_id" => (int)$id, "question_id" => (int)$idQuestion]);
             }
+            model("AssurancesModel")->update($id, ["etat" => AssurancesEntity::ACTIF]);
             $model->db->transCommit();
             $response = [
                 'statut'  => 'ok',
@@ -1081,7 +1082,10 @@ class AssurancesController extends ResourceController
     public function getAssursOfCategory($id)
     {
         $assuranceIDs = model('AssuranceCategoriesModel')->where('categorie_id', $id)->findColumn('assurance_id');
-        $assurances   = $assuranceIDs ? model('AssurancesModel')->whereIn('id', $assuranceIDs)->findAll() : [];
+        $assurances   = $assuranceIDs ? model('AssurancesModel')
+            ->whereIn('id', $assuranceIDs)
+            ->where('etat', AssurancesEntity::ACTIF)
+            ->findAll() : [];
         $response = [
             'statut' => 'ok',
             'message' => $assurances ? 'Assurances de cette catégorie.' : "Aucune assurance pour cette catégorie.",

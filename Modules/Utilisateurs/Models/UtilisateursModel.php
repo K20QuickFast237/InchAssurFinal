@@ -47,7 +47,14 @@ class UtilisateursModel extends Model
 
     public function getSimplified(int $id)
     {
-        return $this->select("id, code, nom, prenom, photo_profil")->where('id', $id)->first();
+        $userInfo = $this->select("id, code, nom, prenom, photo_profil")->where('id', $id)->first();
+        return [
+            "code"          => $userInfo->code,
+            "nom"           => $userInfo->nom,
+            "prenom"        => $userInfo->prenom,
+            "idUtilisateur" => $userInfo->idUtilisateur,
+            "photoProfil"   => $userInfo->photoProfil,
+        ];
     }
 
     public function getBulkSimplified(array $ids)

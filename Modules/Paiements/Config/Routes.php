@@ -22,6 +22,7 @@ $routes->group('paiements', ['namespace' => 'Modules\Paiements\Controllers'], st
     $routes->get('',                       'PaiementsController::index');
     $routes->get('utilisateur/(:segment)', 'PaiementsController::index/$1');
     $routes->get('pays', 'PaiementsController::getCountries');
+    $routes->get('modes', 'PaiementsController::getAllmodePaiement');
     $routes->post('notify', 'PaiementsController::setPayStatus');
     $routes->post('statut', 'PaiementsController::localSetPayStatus');
 });

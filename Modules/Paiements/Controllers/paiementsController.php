@@ -16,6 +16,7 @@ use Modules\Paiements\Entities\LignetransactionEntity;
 use Modules\Paiements\Entities\PaiementEntity;
 use Modules\Paiements\Entities\PayOptionEntity;
 use Modules\Paiements\Entities\TransactionEntity;
+use Modules\Paiements\Models\PaiementModesModel;
 use Monetbil;
 use preload;
 
@@ -354,7 +355,7 @@ class PaiementsController extends ResourceController
         $transactInfo = new TransactionEntity([
             "code"            => random_string('alnum', 10),
             "motif"           => "Paiement Souscription $souscription->code",
-            "beneficiaire_id" => $souscription->souscripteur_id,
+            "beneficiaire_id" => $souscription->souscripteur_id->id,
             "pay_option_id"   => $payOption->id,
             "prix_total"      => $prixToPay,
             "tva_taux"        => 0, //$tva->taux,
@@ -600,5 +601,26 @@ class PaiementsController extends ResourceController
             'data'    => model("PaiementPaysModel")->findAll(),
         ];
         return $this->sendResponse($response);
+    }
+
+    public function getAllmodePaiement()
+    {
+        $query = model("PaiementModesModel")->asArray()->select('nom, operateur');
+        $data = $query->findall();
+
+        if (!count($data)) { // this case is for a not value in database
+            $response = [
+                'statut'  => 'no',
+                'message' => 'Aucun Mode de paiement trouvé.',
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_ACCEPTED);
+        } else {
+            $response = [
+                'statut'  => 'ok',
+                'message' => count($data) . ' Mode(s) de paiement trouvé(s)',
+                'data'    => $data,
+            ];
+            return $this->sendResponse($response);
+        }
     }
 }

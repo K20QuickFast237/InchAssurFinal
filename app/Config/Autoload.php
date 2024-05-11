@@ -58,7 +58,8 @@ class Autoload extends AutoloadConfig
         'Modules\CLI'          => ROOTPATH . 'Modules/CLI',
         'Modules\Incidents'    => ROOTPATH . 'Modules/Incidents',
         'Modules\Messageries'  => ROOTPATH . 'Modules/Messageries',
-        // 'Modules/Image' => ROOTPATH . 'Modules/Image'
+        'Modules\Agendas'      => ROOTPATH . 'Modules/Agendas',
+        'Modules\Consultations' => ROOTPATH . 'Modules/Consultations',
     ];
 
     /**
