@@ -26,6 +26,7 @@ class AssureursEntity extends EntreprisesEntity
     protected $datamap = [
         // property_name => db_column_name
         'idAssureur' => 'id',
+        // 'logo'       => 'photoProfil',
         'logo'       => 'photo_profil',
         // 'profil'     => 'profil_id',
         'agents'     => 'membres',

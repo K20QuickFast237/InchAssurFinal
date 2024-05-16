@@ -290,7 +290,8 @@ class AssurancesEntity extends ProduitsEntity
         if (isset($this->attributes['assureur_id']) && preg_match('/[integer|string]/i', gettype($this->attributes['assureur_id']))) {
             // if (isset($this->attributes['assureur_id']) && gettype($this->attributes['assureur_id']) == "string") {
             $assureur = model('AssureursModel')->getSimplified($this->attributes['assureur_id']);
-            $this->attributes['assureur_id'] = $assureur->getSimplified();
+            // $this->attributes['assureur_id'] = $assureur->getSimplified();
+            $this->attributes['assureur_id'] = $assureur;
         }
 
         return $this->attributes['assureur_id'] ?? null;

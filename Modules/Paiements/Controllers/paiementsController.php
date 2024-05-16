@@ -352,10 +352,13 @@ class PaiementsController extends ResourceController
          * du reste_a_payer. conf: document word ReferenceClassDiagramme.
          * @done
          */
-        $transactInfo = new TransactionEntity([
+        // $transactInfo = new TransactionEntity([
+        // print_r($souscription->souscripteur->id);
+        // exit;
+        $transactInfo = [
             "code"            => random_string('alnum', 10),
             "motif"           => "Paiement Souscription $souscription->code",
-            "beneficiaire_id" => $souscription->souscripteur_id->id,
+            "beneficiaire_id" => $souscription->souscripteur->id, //['idUtilisateur'],
             "pay_option_id"   => $payOption->id,
             "prix_total"      => $prixToPay,
             "tva_taux"        => 0, //$tva->taux,
@@ -364,9 +367,10 @@ class PaiementsController extends ResourceController
             "avance"          => $avance,
             "reste_a_payer"   => $prixToPayNet - $avance,
             "etat"            => TransactionEntity::INITIE,
-        ]);
-        $transactInfo->id = model("TransactionsModel")->insert($transactInfo);
-        model("TransactionLignesModel")->insert(['transaction_id' => $transactInfo->id, 'ligne_id' => $ligneInfo->id]);
+            // ]);
+        ];
+        $transactInfo['id'] = model("TransactionsModel")->insert($transactInfo);
+        model("TransactionLignesModel")->insert(['transaction_id' => $transactInfo['id'], 'ligne_id' => $ligneInfo->id]);
         model("TransactionsModel")->db->transCommit();
         // 3- On initie le paiement,
         $operateurId = model("PaiementModesModel")->where('operateur', $input['operateur'])->findColumn('id')[0];

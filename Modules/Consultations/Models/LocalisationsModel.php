@@ -3,6 +3,7 @@
 namespace Modules\Consultations\Models;
 
 use CodeIgniter\Model;
+use Modules\Consultations\Entities\LocalisationEntity;
 
 class LocalisationsModel extends Model
 {
@@ -11,7 +12,7 @@ class LocalisationsModel extends Model
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $insertID         = 1;
-    protected $returnType       = 'array';
+    protected $returnType       = LocalisationEntity::class;
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = ['etablissement', 'adresse', 'ville', 'latitude', 'longitude', 'coordonnées'];

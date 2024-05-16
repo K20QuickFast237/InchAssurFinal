@@ -17,11 +17,48 @@ class SkillsController extends BaseController
     protected $helpers = ['Modules\Documents\Documents', 'Modules\Images\Images', 'text'];
 
     /**
-     * Retourne la liste des competences
+     * Retourne la liste des competences du médecin spécifié
      *
+     * @param  int|string $medIdentity
      * @return ResponseInterface The HTTP response.
      */
-    public function index($identifier = null)
+    public function index($medIdentity = null)
+    {
+        if ($medIdentity) {
+            $identifier = $this->getIdentifier($medIdentity, 'id');
+            $med = model("UtilisateursModel")->where($identifier['name'], $identifier['value'])->first();
+            $medName = "ce médecin";
+        } else {
+            $med = $this->request->utilisateur;
+            $medName = "vous";
+        }
+
+        $medSkillModel = model("MedecinSkillsModel");
+        $skills = $medSkillModel->select('skill_id as idSkill, description_perso, cout, isExpert, cout_expert as coutExpert, skills.nom, skills.description')
+            ->join('skills', 'skill_id = skills.id', 'left')
+            ->where('medecin_id', $med->id)
+            ->findAll();
+
+        $skills = array_map(function ($s) {
+            if (isset($s['description_perso'])) {
+                $s['description'] = $s['description_perso'];
+            }
+            unset($s['description_perso']);
+            $s['idSkill']  = (int)$s['idSkill'];
+            $s['cout']     = (float)$s['cout'];
+            $s['isExpert'] = (bool)$s['isExpert'];
+            return $s;
+        }, $skills);
+
+        $response = [
+            'statut'  => 'ok',
+            'message' => $skills ? count($skills) . ' skill(s) trouvé(s).' : "Aucun skill trouvé pour $medName.",
+            'data'    => $skills,
+        ];
+        return $this->sendResponse($response);
+    }
+
+    public function showAll()
     {
         $skills = model("SkillsModel")->findAll() ?? [];
 
@@ -137,7 +174,10 @@ class SkillsController extends BaseController
     }
 
     /**
-     * Associe un motif
+     * Associe un ou plusieurs motifs à la compétence
+     * 
+     * @param  int $id the skill identifier
+     * @return ResponseInterface The HTTP response.
      */
     public function setMotifs(int $id)
     {
@@ -216,5 +256,173 @@ class SkillsController extends BaseController
             'message' => 'Association du skill au motif Supprimée.',
         ];
         return $this->sendResponse($response);
+    }
+
+    /**
+     * Défini les compétences d'un médecin
+     *
+     * @param  int|string $medIdentity
+     * @return ResponseInterface The HTTP response.
+     */
+    public function setMedSkill($medIdentity = null)
+    {
+        if ($medIdentity) {
+            if (!auth()->user()->inGroup('administrateur')) {
+                $response = [
+                    'statut'  => 'no',
+                    'message' => ' Action non authorisée pour ce profil.',
+                ];
+                return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+            }
+            $identifier = $this->getIdentifier($medIdentity, 'id');
+            $med = model("UtilisateursModel")->where($identifier['name'], $identifier['value'])->first();
+        } else {
+            if (!auth()->user()->inGroup('medecin')) {
+                $response = [
+                    'statut'  => 'no',
+                    'message' => ' Action non authorisée pour ce profil.',
+                ];
+                return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+            }
+            $med = $this->request->utilisateur;
+        }
+
+        $rules = [
+            'idSkill' => [
+                'rules' => 'required|is_not_unique[skills.id]',
+                'errors' => ['required' => 'Identification du skill requis.', 'is_not_unique' => 'ce skill est inconnu.']
+            ],
+            "description" => "if_exist",
+            "cout" => [
+                'rules' => 'required|numeric',
+                'errors' => ['required' => 'Le coût est requis.', 'numeric' => 'La valeur du coût est incorrect.']
+            ],
+            "isExpert" => [
+                'rules' => 'if_exist|integer|in_list[0,1]',
+                'errors' => ['in_list' => 'valeur d\'expertise inappropriée.']
+            ],
+            "coutExpert" => [
+                'rules' => 'if_exist|numeric',
+                'errors' => ['numeric' => 'La valeur du coût d\'expertise est incorrecte.']
+            ],
+        ];
+
+        $input = $this->getRequestInput($this->request);
+
+        $model = model("MedecinSkillsModel");
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception();
+            }
+
+            $skillInfos = [
+                "medecin_id" => $med->id,
+                "skill_id" => $input['idSkill'],
+                "description_perso" => $input['description'] ?? null,
+                "cout" => $input['cout'],
+                "isExpert" => $input['isExpert'] ?? false,
+                "cout_expert" => $input['coutExpert'] ?? null,
+            ];
+
+            $model->insert($skillInfos);
+
+            $response = [
+                'statut'  => 'ok',
+                'message' => "Skill Défini pour le médecin.",
+                'data'    => [],
+            ];
+            return $this->sendResponse($response);
+        } catch (\Throwable $th) {
+            $model->db->transRollback();
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $response = [
+                'statut'  => 'no',
+                'message' => "Impossible d'associer ce skill au médecin.",
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
+    }
+
+    public function updateMedSkill(int $skillID, $medIdentity = null)
+    {
+        if ($medIdentity) {
+            if (!auth()->user()->inGroup('administrateur')) {
+                $response = [
+                    'statut'  => 'no',
+                    'message' => ' Action non authorisée pour ce profil.',
+                ];
+                return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+            }
+            $identifier = $this->getIdentifier($medIdentity, 'id');
+            $med = model("UtilisateursModel")->where($identifier['name'], $identifier['value'])->first();
+        } else {
+            if (!auth()->user()->inGroup('medecin')) {
+                $response = [
+                    'statut'  => 'no',
+                    'message' => ' Action non authorisée pour ce profil.',
+                ];
+                return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+            }
+            $med = $this->request->utilisateur;
+        }
+
+        $rules = [
+            'idSkill' => [
+                'rules' => 'if_exist|is_not_unique[skills.id]',
+                'errors' => ['is_not_unique' => 'ce skill est inconnu.']
+            ],
+            "description" => "if_exist",
+            "cout" => [
+                'rules' => 'if_exist|numeric',
+                'errors' => ['numeric' => 'La valeur du coût est incorrect.']
+            ],
+            "isExpert" => [
+                'rules' => 'if_exist|integer|in_list[0,1]',
+                'errors' => ['in_list' => 'valeur d\'expertise inappropriée.']
+            ],
+            "coutExpert" => [
+                'rules' => 'if_exist|numeric',
+                'errors' => ['numeric' => 'La valeur du coût d\'expertise est incorrecte.']
+            ],
+        ];
+
+        $input = $this->getRequestInput($this->request);
+
+        $model = model("MedecinSkillsModel");
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception();
+            }
+
+            $skillInfos = [
+                "medecin_id" => $med->id,
+                "skill_id" => $input['idSkill'],
+                "description_perso" => $input['description'] ?? null,
+                "cout" => $input['cout'],
+                "isExpert" => $input['isExpert'] ?? false,
+                "cout_expert" => $input['coutExpert'] ?? null,
+            ];
+
+            $model->update($skillID, $skillInfos);
+
+            $response = [
+                'statut'  => 'ok',
+                'message' => "Skill mis à jour pour le médecin.",
+                'data'    => [],
+            ];
+            return $this->sendResponse($response);
+        } catch (\Throwable $th) {
+            $model->db->transRollback();
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $response = [
+                'statut'  => 'no',
+                'message' => "Impossible d'associer ce skill au médecin.",
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
     }
 }

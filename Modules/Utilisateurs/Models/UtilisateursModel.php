@@ -3,6 +3,7 @@
 namespace Modules\Utilisateurs\Models;
 
 use CodeIgniter\Model;
+use Modules\Utilisateurs\Entities\UtilisateursEntity;
 
 class UtilisateursModel extends Model
 {
@@ -47,14 +48,17 @@ class UtilisateursModel extends Model
 
     public function getSimplified(int $id)
     {
-        $userInfo = $this->select("id, code, nom, prenom, photo_profil")->where('id', $id)->first();
-        return [
-            "code"          => $userInfo->code,
-            "nom"           => $userInfo->nom,
-            "prenom"        => $userInfo->prenom,
-            "idUtilisateur" => $userInfo->idUtilisateur,
-            "photoProfil"   => $userInfo->photoProfil,
-        ];
+        return $this->select("id, code, nom, prenom, photo_profil")->where('id', $id)->first();
+        /* Fonctionnel mais non utilisé
+            $userInfo = $this->select("id, code, nom, prenom, photo_profil")->where('id', $id)->first();
+            return [
+                "code"          => $userInfo->code,
+                "nom"           => $userInfo->nom,
+                "prenom"        => $userInfo->prenom,
+                "idUtilisateur" => $userInfo->idUtilisateur,
+                "photoProfil"   => $userInfo->photoProfil,
+            ];
+        */
     }
 
     public function getBulkSimplified(array $ids)

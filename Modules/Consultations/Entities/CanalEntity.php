@@ -4,11 +4,10 @@ namespace Modules\Consultations\Entities;
 
 use CodeIgniter\Entity\Entity;
 
-class LangueEntity extends Entity
+class CanalEntity extends Entity
 {
-    // const ID_FRANCAIS = 28; // Identifiant en BD du français.
     protected $datamap = [
-        'idLangue' => 'id',
+        'idCanal' => 'id',
     ];
 
     protected $casts = [

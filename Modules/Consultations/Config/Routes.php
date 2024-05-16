@@ -13,7 +13,7 @@ $routes = \Config\Services::routes();
  * --------------------------------------------------------------------
  */
 $routes->group('', ['namespace' => 'Modules\Consultations\Controllers'], static function ($routes) {
-    $routes->get('motifs', 'ConsultationsController::getMotifs');
+    // $routes->get('motifs', 'ConsultationsController::getMotifs');
 
     // $routes->get('/consultFilter', 'User::filterConsult', ['filter' => 'auth']);
     $routes->get('rdv/(:num)', 'ConsultationsController::detailRdv/$1');
@@ -36,26 +36,76 @@ $routes->resource('villes', [
     'except' => 'new,edit',
 ]);
 
-/******************************* Les Langues *********************************/
-$routes->post('langues/(:num)', '\Modules\Consultations\Controllers\LanguesController::update/$1');
+/******************************* Les Localisations *********************************/
+$routes->group('localisations', ['namespace' => 'Modules\Consultations\Controllers'], static function ($routes) {
+    $routes->post('(:num)', 'LocalisationsController::update/$1');
+    $routes->get('medecin/(:segment)', 'LocalisationsController::index/$1');
+    $routes->post('medecin/(:segment)', 'LocalisationsController::setMedLocation/$1');
+    $routes->delete('(:num)/medecin/(:segment)', 'LocalisationsController::delMedLocation/$1/$2');
+});
+$routes->get('allLocalisations', '\Modules\Consultations\Controllers\LocalisationsController::showAll');
+$routes->resource('localisations', [
+    'controller' => '\Modules\Consultations\Controllers\LocalisationsController',
+    'placeholder' => '(:segment)',
+    'except' => 'new,edit',
+]);
+
+
+/******************************* Les Langues Start *********************************/
+$routes->group('langues', ['namespace' => 'Modules\Consultations\Controllers'], static function ($routes) {
+    $routes->post('(:num)', 'LanguesController::update/$1');
+    $routes->get('medecin/(:segment)', 'LanguesController::index/$1');
+    $routes->post('medecin/(:segment)', 'LanguesController::setMedlang/$1');
+    $routes->delete('(:num)/medecin/(:segment)', 'LocalisationsController::delMedLangue/$1/$2');
+});
 $routes->resource('langues', [
     'controller' => '\Modules\Consultations\Controllers\LanguesController',
     'placeholder' => '(:segment)',
     'except' => 'new,edit',
 ]);
+/******************************* Les Langues End *********************************/
+
+
+/******************************* Les Canaux  Start *********************************/
+$routes->group('canaux', ['namespace' => 'Modules\Consultations\Controllers'], static function ($routes) {
+    $routes->post('(:num)', 'CanauxController::update/$1');
+    $routes->get('medecin/(:segment)', 'CanauxController::index/$1');
+    $routes->post('medecin/(:segment)', 'CanauxController::setMedCanal/$1');
+    $routes->delete('(:num)/medecin/(:segment)', 'CanauxController::delMedCanal/$1/$2');
+});
+$routes->resource('canaux', [
+    'controller' => '\Modules\Consultations\Controllers\CanauxController',
+    'placeholder' => '(:segment)',
+    'except' => 'new,edit',
+]);
+/******************************* Les Canaux  End *********************************/
+
 
 /******************************* Skills && Motifs  Start *********************************/
-$routes->post('skills/(:num)', '\Modules\Consultations\Controllers\SkillsController::update/$1');
+$routes->get('allSkills', '\Modules\Consultations\Controllers\SkillsController::showAll');
+$routes->group('skills', ['namespace' => 'Modules\Consultations\Controllers'], static function ($routes) {
+    $routes->post('(:num)', 'SkillsController::update/$1');
+    $routes->get('(:num)/motifs', 'SkillsController::getMotifs/$1');
+    $routes->post('(:num)/motifs', 'SkillsController::setMotifs/$1');
+    $routes->get('medecin/(:segment)', 'SkillsController::index/$1');
+    $routes->post('medecin/(:segment)', 'SkillsController::setMedSkill/$1');
+    $routes->post('medecin', 'SkillsController::setMedSkill');
+    $routes->post('(:num)/medecin/(:segment)', 'SkillsController::updateMedSkill/$1/$2');
+    $routes->post('(:num)/medecin', 'SkillsController::updateMedSkill/$1');
+    $routes->delete('(:num)/motifs/(:num)', 'SkillsController::delMotifs/$1/$2');
+});
 $routes->resource('skills', [
     'controller' => '\Modules\Consultations\Controllers\SkillsController',
     'placeholder' => '(:segment)',
     'except' => 'new,edit',
 ]);
-$routes->post('motifs/(:num)', '\Modules\Consultations\Controllers\MotifsController::update/$1');
-$routes->get('motifs/(:num)/skills', '\Modules\Consultations\Controllers\MotifsController::getSkills/$1');
-$routes->get('skills/(:num)/motifs', '\Modules\Consultations\Controllers\SkillsController::getMotifs/$1');
-$routes->post('skills/(:num)/motifs', '\Modules\Consultations\Controllers\SkillsController::setMotifs/$1');
-$routes->delete('skills/(:num)/motifs/(:num)', '\Modules\Consultations\Controllers\SkillsController::delMotifs/$1/$2');
+$routes->get('allMotifs', '\Modules\Consultations\Controllers\MotifsController::showAll');
+$routes->group('motifs', ['namespace' => 'Modules\Consultations\Controllers'], static function ($routes) {
+    $routes->post('(:num)', 'MotifsController::update/$1');
+    $routes->post('(:num)', 'MotifsController::update/$1');
+    $routes->get('medecin/(:segment)', 'MotifsController::index/$1');
+    $routes->get('(:num)/skills', 'MotifsController::getSkills/$1');
+});
 $routes->resource('motifs', [
     'controller' => '\Modules\Consultations\Controllers\MotifsController',
     'placeholder' => '(:segment)',

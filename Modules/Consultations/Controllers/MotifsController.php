@@ -17,18 +17,18 @@ class MotifsController extends BaseController
     protected $helpers = ['Modules\Documents\Documents', 'Modules\Images\Images', 'text'];
 
     /**
-     * Retourne la liste des competences
+     * Retourne la liste des motifs
      *
      * @return ResponseInterface The HTTP response.
      */
-    public function index($identifier = null)
+    public function showAll()
     {
-        $skills = model("MotifsModel")->findAll() ?? [];
+        $motifs = model("MotifsModel")->findAll() ?? [];
 
         $response = [
             'statut'  => 'ok',
-            'message' => (count($skills) ? count($skills) : 'Aucun') . ' motif(s) trouvé(s).',
-            'data'    => $skills,
+            'message' => (count($motifs) ? count($motifs) : 'Aucun') . ' motif(s) trouvé(s).',
+            'data'    => $motifs,
         ];
         return $this->sendResponse($response);
     }
@@ -156,5 +156,117 @@ class MotifsController extends BaseController
             'data'    => $skills,
         ];
         return $this->sendResponse($response);
+    }
+
+
+    /**
+     * Renvoie la liste des motifs de consultation d'un médecin,
+     * en fonction de ses skills où des motifs par lui défini
+     * 
+     * @param  int|string $codeMedecin
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    public function index($medIdentity = null)
+    {
+        /*
+            récuperer l'id du médecin,
+            lister ses motifs,
+            retourner le résultat.
+        */
+        if ($medIdentity) {
+            $identifier = $this->getIdentifier($medIdentity, 'id');
+            $med = model("UtilisateursModel")->where($identifier['name'], $identifier['value'])->first();
+            $medName = "ce médecin";
+        } else {
+            $med = $this->request->utilisateur;
+            $medName = "vous";
+        }
+
+        $medId = $med->id;
+
+        $data = $this->getMedMotifs([$medId])[0] ?? null;
+
+        $response = [
+            'statut' => 'ok',
+            'message' => $data ? 'motif(s) trouvé(s).' : "Aucun motif trouvé pour $medName.",
+            'data'   => $data,
+        ];
+        return $this->sendResponse($response);
+    }
+
+    /**
+     * getmedMotifs
+     *
+     * Renvoie la liste des motifs de consultation des médecins,
+     * en fonction de leurs skills où des motifs par eux défini.
+     * Conserve l'ordre des ids de medecin fourni.
+     * 
+     * @param  array $medIds
+     * @return array
+     */
+    private function getMedMotifs(array $medIds)
+    {
+        /*
+            À partir de la liste d'id de medecins,
+            récupérer la liste des skills et motifs associés,
+            pour chaque skill, 
+            Si la liste des motifs est disponible, la renvoyer,
+            si non, récupérer les motifs par défaut associés au skill
+        */
+        $medSkillModel = model("MedecinSkillsModel");
+        $data = $medSkillModel->select('skill_id, nom, motifs, medecin_id as medID')
+            ->join('skills', 'skill_id = skills.id', 'left')
+            ->whereIn('medecin_id', $medIds)
+            ->findAll();
+
+        if (!$data) {
+            return [];
+        }
+        // skills sans motif défini
+        // $noMotifsData  = array_filter($data, fn($val, $key) => (!$val['motifs']), ARRAY_FILTER_USE_BOTH);
+
+        // liste des ids de skills n'ayant pas de motif associé
+        $noMotifSkills = array_map( // remplacer en array_column
+            fn ($val) => $val['skill_id'],
+            // $noMotifsData
+            array_filter($data, fn ($val, $key) => (!$val['motifs']), ARRAY_FILTER_USE_BOTH)
+        );
+
+        //récupération des motifs de ces skills
+        $skillMotifModel = model("SkillsMotifModel");
+        $motifs = $skillMotifModel->findBulkMotifs($noMotifSkills);
+
+        //association des skills aux motifs
+        $motifiedSkills = [];
+
+
+        foreach ($noMotifSkills as $skillId) {
+            $motifiedSkills[$skillId] = array_values(array_map(
+                fn ($val) => [
+                    'id'          => $val['id'],
+                    'nom'         => $val['nom'],
+                    'description' => $val['description']
+                ],
+                array_filter($motifs, fn ($v, $k) => $v['skill_id'] === $skillId, ARRAY_FILTER_USE_BOTH)
+            ));
+        }
+
+        //association des motifs aux données
+        $getList   = fn () => $motifiedSkills;
+        $arguments = array_fill(0, count($data), $getList);
+        $result = [];
+        foreach ($medIds as $elment) {
+            $result[] = array_map(
+                fn ($val, $suplData) => [
+                    $val['nom'] => [
+                        'motifs' => $suplData()[$val['skill_id']]
+                    ]
+                ],
+                array_filter($data, fn ($v, $k) => (int)$v['medID'] === $elment, ARRAY_FILTER_USE_BOTH),
+                $arguments
+            );
+        }
+
+        return $result;
     }
 }

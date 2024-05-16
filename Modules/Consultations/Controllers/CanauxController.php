@@ -9,7 +9,7 @@ use App\Traits\ControllerUtilsTrait;
 use App\Traits\ErrorsDataTrait;
 use Modules\Consultations\Entities\LangueEntity;
 
-class LanguesController extends BaseController
+class CanauxController extends BaseController
 {
     use ControllerUtilsTrait;
     use ResponseTrait;
@@ -18,7 +18,7 @@ class LanguesController extends BaseController
     protected $helpers = ['Modules\Documents\Documents', 'Modules\Images\Images', 'text'];
 
     /**
-     * Retourne la liste des langues, ou celle du médecin spécifié.
+     * Retourne la liste des canaux, ou ceux du médecin spécifié.
      *
      * @return ResponseInterface The HTTP response.
      */
@@ -27,28 +27,26 @@ class LanguesController extends BaseController
         if ($identifier) {
             $identifier = $this->getIdentifier($identifier, 'id');
             $med = model("UtilisateursModel")->where($identifier['name'], $identifier['value'])->first();
-            // $langueIDs = model("MedecinLanguesModel")->where("medecin_id", $med->id)->findAll() ?? [];
-            $langueIDs = model("MedecinLanguesModel")->where("medecin_id", $med->id)->findcolumn("langue_id");
-            // $langueIDs[] = LangueEntity::ID_FRANCAIS;
-            if ($langueIDs) {
-                $langues = model("LanguesModel")->whereIn("id", $langueIDs)->findAll();
+            $canauxIDs = model("MedecinCanauxModel")->where("medecin_id", $med->id)->findColumn("canal_id") ?? [];
+            if ($canauxIDs) {
+                $canaux = model("CanauxModel")->whereIn("id", $canauxIDs)->findAll();
             } else {
-                $langues = [];
+                $canaux = [];
             }
         } else {
-            $langues = model("LanguesModel")->findAll() ?? [];
+            $canaux = model("CanauxModel")->findAll() ?? [];
         }
 
         $response = [
             'statut'  => 'ok',
-            'message' => (count($langues) ? count($langues) : 'Aucune') . ' langue(s) trouvée(s).',
-            'data'    => $langues,
+            'message' => (count($canaux) ? count($canaux) . ' canaux' : 'Aucun canal') . ' trouvée(s).',
+            'data'    => $canaux,
         ];
         return $this->sendResponse($response);
     }
 
     /**
-     * Ajoute une langue
+     * Ajoute un canal
      *
      * @return ResponseInterface The HTTP response.
      */
@@ -66,7 +64,7 @@ class LanguesController extends BaseController
         $rules = [
             'nom' => [
                 'rules' => 'required',
-                'errors' => ['required' => 'Le nom de la langue est requis.',]
+                'errors' => ['required' => 'Le nom du canal est requis.',]
             ],
         ];
 
@@ -80,23 +78,23 @@ class LanguesController extends BaseController
             $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;
             $response = [
                 'statut'  => 'no',
-                'message' => $validationError ? $errorsData['errors'] : "Impossible d'ajouter cette ville.",
+                'message' => $validationError ? $errorsData['errors'] : "Impossible d'ajouter ce canal.",
                 'errors'  => $errorsData['errors'],
             ];
             return $this->sendResponse($response, $errorsData['code']);
         }
         $input = $this->getRequestInput($this->request);
 
-        model("Languesmodel")->insert(['nom' => $input['nom']]);
+        model("CanauxModel")->insert(['nom' => $input['nom']]);
         $response = [
             'statut'  => 'ok',
-            'message' => 'Langue Ajoutée.',
+            'message' => 'Canal Ajouté.',
         ];
         return $this->sendResponse($response);
     }
 
     /**
-     * Modifie une langue
+     * Modifie un canal
      *
      * @return ResponseInterface The HTTP response.
      */
@@ -114,7 +112,7 @@ class LanguesController extends BaseController
         $rules = [
             'nom' => [
                 'rules' => 'required',
-                'errors' => ['required' => 'Le nom de la langue est requis.',]
+                'errors' => ['required' => 'Le nom du canal est requis.',]
             ],
         ];
 
@@ -128,23 +126,23 @@ class LanguesController extends BaseController
             $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;
             $response = [
                 'statut'  => 'no',
-                'message' => $validationError ? $errorsData['errors'] : "Impossible de modifier cette langue.",
+                'message' => $validationError ? $errorsData['errors'] : "Impossible de modifier ce canal.",
                 'errors'  => $errorsData['errors'],
             ];
             return $this->sendResponse($response, $errorsData['code']);
         }
 
         $input = $this->getRequestInput($this->request);
-        model("Languesmodel")->update($id, ['nom' => $input['nom']]);
+        model("CanauxModel")->update($id, ['nom' => $input['nom']]);
         $response = [
             'statut'  => 'ok',
-            'message' => 'Langue Modifiée.',
+            'message' => 'Canal Modifié.',
         ];
         return $this->sendResponse($response);
     }
 
     /**
-     * Supprime une langue
+     * Supprime un canal
      *
      * @return ResponseInterface The HTTP response.
      */
@@ -154,33 +152,54 @@ class LanguesController extends BaseController
         if (!auth()->user()->inGroup('administrateur')) {
             $response = [
                 'statut'  => 'no',
-                'message' => ' Action non authorisée pour ce profil.',
+                'message' => 'Action non authorisée pour ce profil.',
             ];
             return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
         }
-        model("Languesmodel")->delete($id);
+        model("CanauxModel")->delete($id);
         $response = [
             'statut'  => 'ok',
-            'message' => 'Langue Supprimée.',
+            'message' => 'Canal Supprimé.',
         ];
         return $this->sendResponse($response);
     }
 
-    /**
-     * Associe des langues au médecin spécifié.
+    /** 
+     * Associe des canaux au médecin spécifié.
      *
      * @param  int|string $medIdentity
      * @return ResponseInterface The HTTP response.
      */
-    public function setMedlang($medIdentity)
+    public function setMedCanal($medIdentity)
     {
+        if ($medIdentity) {
+            if (!auth()->user()->inGroup('administrateur')) {
+                $response = [
+                    'statut'  => 'no',
+                    'message' => ' Action non authorisée pour ce profil.',
+                ];
+                return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+            }
+            $identifier = $this->getIdentifier($medIdentity, 'id');
+            $med = model("UtilisateursModel")->where($identifier['name'], $identifier['value'])->first();
+        } else {
+            if (!auth()->user()->inGroup('medecin')) {
+                $response = [
+                    'statut'  => 'no',
+                    'message' => ' Action non authorisée pour ce profil.',
+                ];
+                return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+            }
+            $med = $this->request->utilisateur;
+        }
+
         $rules = [
-            'langues'   => 'required',
-            'langues.*' => 'integer|is_not_unique[langues.id]',
+            'canaux'   => 'required',
+            'canaux.*' => 'integer|is_not_unique[canaux.id]',
         ];
         $input = $this->getRequestInput($this->request);
 
-        $model = model("MedecinLanguesModel");
+        $model = model("MedecinCanauxModel");
         try {
             if (!$this->validate($rules)) {
                 $hasError = true;
@@ -188,13 +207,13 @@ class LanguesController extends BaseController
             }
             $model->db->transBegin();
 
-            foreach ($input['langues'] as $idLangue) {
-                $model->insert(["medecin_id" => (int)$medIdentity, "langue_id" => (int)$idLangue]);
+            foreach ($input['canaux'] as $idCanal) {
+                $model->insert(["medecin_id" => $med->id, "canal_id" => (int)$idCanal]);
             }
             $model->db->transCommit();
             $response = [
                 'statut'  => 'ok',
-                'message' => "Langue(s) Définie(s) pour le médecin.",
+                'message' => "Canal(aux) Défini(s) pour le médecin.",
                 'data'    => [],
             ];
             return $this->sendResponse($response);
@@ -203,7 +222,7 @@ class LanguesController extends BaseController
             $errorsData = $this->getErrorsData($th, isset($hasError));
             $response = [
                 'statut'  => 'no',
-                'message' => "Impossible d'associer ce(s) langue(s) au médecin.",
+                'message' => "Impossible d'associer ce(s) canal(aux) au médecin.",
                 'errors'  => $errorsData['errors'],
             ];
             return $this->sendResponse($response, $errorsData['code']);
@@ -211,20 +230,20 @@ class LanguesController extends BaseController
     }
 
     /**
-     * Supprime une association entre un medecin et une localisation
+     * Supprime une association entre un medecin et un canal
      *
-     * @param  int $idLangue
+     * @param  int $idCanal
      * @param  int|string $medIdentity
      * @return ResponseInterface The HTTP response.
      */
-    public function delMedLangue($idLangue, $medIdentity)
+    public function delMedCanal($idCanal, $medIdentity)
     {
         $identifier = $this->getIdentifier($medIdentity, 'id');
         $med = model("UtilisateursModel")->where($identifier['name'], $identifier['value'])->first();
-        model("MedecinLanguesModel")->where("medecin_id", $med->id)->where("langue_id", $idLangue)->delete();
+        model("MedecinCanauxModel")->where("medecin_id", $med->id)->where("canal_id", $idCanal)->delete();
         $response = [
             'statut'  => 'ok',
-            'message' => "Langue retirée pour ce médecin.",
+            'message' => "Canal retiré pour ce médecin.",
         ];
         return $this->sendResponse($response);
     }

@@ -28,10 +28,10 @@ $routes->group('assurances', ['namespace' => 'Modules\Assurances\Controllers'], 
     $routes->get("(:segment)/services",         "AssurancesController::getAssurServices/$1");
     $routes->get("(:segment)/images",           "AssurancesController::getAssurImages/$1");
     $routes->get("(:segment)/payOptions",       "AssurancesController::getAssurPayOptions/$1");
-    $routes->delete("(:num)/document/(:num)",  "AssurancesController::delAssurDocument/$1/$2");
+    $routes->delete("(:num)/document/(:num)",   "AssurancesController::delAssurDocument/$1/$2");
     $routes->get("(:segment)/infos",            "AssurancesController::getAssurInfos/$1");
-    $routes->post("(:segment)/active",           "AssurancesController::activateAssur/$1");
-    $routes->post("(:segment)/desactive",        "AssurancesController::disactivateAssur/$1");
+    $routes->post("(:segment)/active",          "AssurancesController::activateAssur/$1");
+    $routes->post("(:segment)/desactive",       "AssurancesController::disactivateAssur/$1");
     $routes->post("(:segment)",                 "AssurancesController::update/$1");
 });
 
