@@ -12,6 +12,7 @@ use CodeIgniter\RESTful\ResourceController;
 use CodeIgniter\HTTP\ResponseInterface;
 use Modules\Assurances\Entities\SouscriptionsEntity;
 use Modules\Assurances\Models\SouscriptionsModel;
+use Modules\Consultations\Entities\ConsultationEntity;
 use Modules\Paiements\Entities\LignetransactionEntity;
 use Modules\Paiements\Entities\PaiementEntity;
 use Modules\Paiements\Entities\PayOptionEntity;
@@ -252,7 +253,7 @@ class PaiementsController extends ResourceController
             'returnURL'      => [
                 'rules'      => 'required|valid_url',
                 'errors'     => [
-                    'required'  => "L'URL de retour doit être spécifié.",
+                    'required'  => "L'URL de retour doit être spécifiée.",
                     'valid_url' => "URL de retour non conforme.",
                 ],
             ],
@@ -380,6 +381,7 @@ class PaiementsController extends ResourceController
             'statut'    => PaiementEntity::EN_COURS,
             'mode_id'   => $operateurId,
             'auteur_id' => $this->request->utilisateur->id,
+            'transaction_id' => $transactInfo['id'],
         );
         model("PaiementsModel")->insert($paiementInfo);
 
@@ -392,8 +394,8 @@ class PaiementsController extends ResourceController
         // 6- Appeler MonetBill
         $monetbil_args = array(
             'amount'      => $avance,
-            'phone'       => $input['telephone'] ?? null,
-            'country'     => $input['pays'] ?? null,
+            'phone'       => $input['telephone'] ?? $this->request->utilisateur->tel1,
+            'country'     => $input['pays'] ?? 'CM',
             'phone_lock'  => false,
             'locale'      => 'fr', // Display language fr or en
             'operator'    => $input['operateur'],
@@ -499,6 +501,111 @@ class PaiementsController extends ResourceController
         exit('received');
     }
 
+    public function localSetConsultPayStatus()
+    {
+        $rules = [
+            'transaction_id' => 'required',
+            'item_ref'       => 'required',
+            'payment_ref'    => 'required',
+            'payment_status' => 'required',
+        ];
+
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception('');
+            }
+        } catch (\Throwable $th) {
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $response = [
+                'statut'  => 'no',
+                'message' => $errorsData['errors'],
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
+        $input = $this->getRequestInput($this->request);
+        $item_ref       = $input['item_ref'];
+        $payment_ref    = $input['payment_ref'];
+        $payment_status = $input['payment_status'];
+        /*
+            mettre à jour le statut du paiement
+            mettre à jour l'agenda du médecin (en cas de validation)
+            mettre à jour le statut de la consultation
+            mettre à jour le statut de la transaction
+        */
+        // Mettre à jour le statut de la transaction
+        $ligneTransact = model("LignetransactionsModel")->where('produit_id', $consultation->id)->where('produit_group_name', 'Consultation')->first();
+        $idLigneTransact = $ligneTransact->id;
+        unset($ligneTransact);
+        $transactInfo = model("TransactionsModel")->join("transaction_lignes", "transaction_id=transactions.id")
+            ->select('transactions.*')
+            ->where("ligne_id", $idLigneTransact)
+            ->first();
+        if (!$transactInfo) {
+            $response = [
+                'statut'  => 'no',
+                'message' => 'Transaction introuvable',
+                'data'    => [],
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+        }
+
+        if (Monetbil::STATUS_SUCCESS == $payment_status) {
+            // Successful payment!
+            // mettre à jour le statut du paiement
+            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::VALIDE)->update();
+            $message = "Paiement Réussi.";
+            $code = ResponseInterface::HTTP_OK;
+            // mettre à jour le statut de la transaction
+            if ($transactInfo->reste_a_payer <= 0) {
+                model("TransactionsModel")->update($transactInfo->id, ['etat' => TransactionEntity::TERMINE]);
+            } else {
+                model("TransactionsModel")->update($transactInfo->id, ['etat' => TransactionEntity::EN_COURS]);
+            }
+            // mettre à jour le statut de la consultation
+            $consultation = model("ConsultationsModel")->where("code", $item_ref)->first();
+            model("ConsultationsModel")->where("id", $$consultation->id)->set('statut', ConsultationEntity::VALIDE)->update();
+            // mettre à jour l'agenda du médecin
+            $heure = $consultation->heure;
+            $agenda = model("AgendasModel")->where('proprietaire_id', $consultation->medecin_user_id)
+                ->where('jour_dispo', $consultation->date)
+                ->where('heure_dispo_debut <=', $heure)
+                ->where('heure_dispo_fin >=', $heure)
+                ->first();
+            $slot = reset(array_filter($agenda->slots, function ($sl) use ($heure) {
+                strtotime($sl['debut']) <= strtotime($heure) && strtotime($sl['fin']) >= strtotime($heure);
+            }));
+            $agenda->removeSlot($slot['id']);
+            $agenda->save();
+        } elseif (Monetbil::STATUS_CANCELLED == $payment_status) {
+            // mettre à jour le statut du paiement
+            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::ANNULE)->update();
+            // mettre à jour le statut de la transaction
+            model("TransactionsModel")->update($transactInfo->id, ['etat' => TransactionEntity::TERMINE]);
+            // mettre à jour le statut de la consultation
+            model("ConsultationsModel")->where("code", $item_ref)->set('statut', ConsultationEntity::ANNULE)->update();
+            $message = "Paiement Annulé.";
+            $code = ResponseInterface::HTTP_BAD_REQUEST;
+        } else {
+            // Payment failed!
+            // mettre à jour le statut du paiement
+            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::ECHOUE)->update();
+            // mettre à jour le statut de la transaction
+            model("TransactionsModel")->update($transactInfo->id, ['etat' => TransactionEntity::TERMINE]);
+            // mettre à jour le statut de la consultation
+            model("ConsultationsModel")->where("code", $item_ref)->set('statut', ConsultationEntity::ECHOUE)->update();
+            $message = "Echec du Paiement.";
+            $code = ResponseInterface::HTTP_BAD_REQUEST;
+        }
+        $response = [
+            'statut'  => 'ok',
+            'message' => $message,
+            'data'    => [],
+        ];
+        return $this->sendResponse($response, $code);
+    }
+
     /**
      * localSetPayStatus fait approximativement les mêmes traitements que setPayStatus
      * à la différence que les données transites par le front au lieu de venir directement
@@ -558,9 +665,9 @@ class PaiementsController extends ResourceController
             $message = "Paiement Réussi.";
             $code = ResponseInterface::HTTP_OK;
             if ($transactInfo->reste_a_payer <= 0) {
-                model("TransactionsModel")->update($transactInfo->id, ['etat' => TransactionEntity::TERMINE], ['transaction_id' => $transactInfo->id]);
+                model("TransactionsModel")->update($transactInfo->id, ['etat' => TransactionEntity::TERMINE]);
             } else {
-                model("TransactionsModel")->update($transactInfo->id, ['etat' => TransactionEntity::EN_COURS], ['transaction_id' => $transactInfo->id]);
+                model("TransactionsModel")->update($transactInfo->id, ['etat' => TransactionEntity::EN_COURS]);
             }
             $souscription = model("SouscriptionsModel")->where("code", $item_ref)->first();
             $duree = model("AssurancesModel")->where('id', $idAssurance)->findColumn('duree')[0];
@@ -571,6 +678,15 @@ class PaiementsController extends ResourceController
                 "dateDebutValidite" => $today,
                 "dateFinValidite"   => date('Y-m-d', strtotime("$today + $duree days")),
             ])->update();
+
+            //associate the subscription services.
+            $serviceIds = model("AssuranceServicesModel")->where("assurance_id", $idAssurance)->findColumn('service_id');
+            $sousID = $souscription->id;
+            $sousServInfo = array_map(function ($serviceId) use ($sousID) {
+                return ['souscription_id' => $sousID, 'service_id' => $serviceId];
+            }, $serviceIds);
+            model("SouscriptionServicesModel")->insertBatch($sousServInfo);
+
             // Mark the order as paid in your system
         } elseif (Monetbil::STATUS_CANCELLED == $payment_status) {
             // Transaction cancelled

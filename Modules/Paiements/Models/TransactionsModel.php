@@ -61,4 +61,33 @@ class TransactionsModel extends Model
         }
         return $data;
     }
+
+    /**
+     * initiateConsultTransaction
+     * 
+     * cree une nouvelle transaction et retourne son identifiant
+     *
+     * @return int
+     */
+    public function initiateTransaction(int $beneficiaire_id, float $produitPrix, float $avance, int $payeur_id, string $motif = '', string $codeReduction = '', float $valeurReduction = 0, float $tauxTaxe = 0, float $montantTaxe = 0)
+    {
+        // Ajout transaction
+        $transaction  = [
+            'type'            => ($avance >= $produitPrix) ? TransactionEntity::TOTALE : TransactionEntity::PARTIEL,
+            'prix'            => $produitPrix,
+            'motif'           => $motif,
+            'beneficiaire_id' => $beneficiaire_id,
+            'payeur_id'       => $payeur_id,
+            'code_reduction'  => $codeReduction,
+            'valeur_reduction' => $valeurReduction,
+            'taux_taxe'       => $tauxTaxe,
+            'montant_taxe'    => $montantTaxe,
+            'net_a_payer'     => $prixNet = $produitPrix + $montantTaxe ? $montantTaxe : ($tauxTaxe ? $produitPrix * $tauxTaxe : 0),
+            'avance'          => $avance,
+            'reste'           => ($prixNet - $avance) > 0 ? $prixNet - $avance : 0,
+            'statut'          => TransactionEntity::INITIE
+        ];
+
+        return $this->insert($transaction);
+    }
 }

@@ -716,6 +716,7 @@ class AgendasController extends BaseController
         }
         $agenda = model("AgendasModel")
             ->where("proprietaire_id", $utilisateur->id)
+            ->where("statut", AgendaEntity::AVAILABLE)
             ->orderBy('dateCreation', 'desc')
             ->findAll();
 
@@ -778,7 +779,7 @@ class AgendasController extends BaseController
     public function create($medIdentify = null, int $agendaID = null)
     {
         if (!auth()->user()->can('agendas.create')) {
-            if ((!$medIdentify) || ($medIdentify && !auth()->user()->inGroup('administrateur'))) {
+            if ($medIdentify && !auth()->user()->inGroup('administrateur')) {
                 $response = [
                     'statut' => 'no',
                     'message' => 'Action non authorisée pour ce profil.',
@@ -801,6 +802,10 @@ class AgendasController extends BaseController
             'fin'   => [
                 'rules' => 'required|regex_match[/[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}/]',
                 'errors' => ['required' => 'Précisez la date/heure de fin.', 'regex_match' => 'Format de date attendu YYYY-mm-dd HH:ii.']
+            ],
+            'titre' => [
+                'rules' => 'if_exist|max_length[50]',
+                'errors' => ['max_length' => 'Le titre doit contenir au plus 50 caractères.']
             ],
             'duree' => [
                 'rules' => 'if_exist|less_than[121]|greater_than[10]',
@@ -846,8 +851,9 @@ class AgendasController extends BaseController
         foreach ($currents as $current) {
             $current['debut'] = date('Y-m-d H:i', strtotime($current['jour_dispo'] . ' ' . $current['heure_dispo_debut']));
             $current['fin'] = date('Y-m-d H:i', strtotime($current['jour_dispo'] . ' ' . $current['heure_dispo_fin']));
-            if ((($current['heure_dispo_debut'] <= $debut) && ($debut < $current['heure_dispo_fin'])) || (($current['heure_dispo_debut'] < $fin) && ($fin <= $current['heure_dispo_fin']))) {
-                // if ((($current['debut'] <= $debut) && ($debut < $current['fin'])) || (($current['debut'] < $fin) && ($fin <= $current['fin']))) {
+
+            // if ((($current['heure_dispo_debut'] <= $debut) && ($debut < $current['heure_dispo_fin'])) || (($current['heure_dispo_debut'] < $fin) && ($fin <= $current['heure_dispo_fin']))) {
+            if ((($current['debut'] <= $input['debut']) && ($input['debut'] < $current['fin'])) || (($current['debut'] < $input['fin']) && ($input['fin'] <= $current['fin']))) {
                 $response = [
                     'statut'  => 'no',
                     'message' => 'Cette plage chevauche une autre.',
@@ -860,14 +866,14 @@ class AgendasController extends BaseController
             'jour_dispo'          => $jour,
             'heure_dispo_debut'   => $debut,
             'heure_dispo_fin'     => $fin,
-            'titre'               => ucfirst((string)htmlspecialchars($input['label'] ?? 'Disponible')),
+            'titre'               => ucfirst((string)htmlspecialchars($input['titre'] ?? 'Disponible')),
             'statut'              => AgendaEntity::AVAILABLE,
             'proprietaire_id' => $userID,
         ];
         /*
-                On part de la date de debut et on ajoute la duréé d'une consultation
-                jusqu'à ce qu'on se trouve à l'heure de fin 
-            */
+            On part de la date de debut et on ajoute la duréé d'une consultation
+            jusqu'à ce qu'on se trouve à l'heure de fin 
+        */
         $i     = 1;
         $slots = [];
         while ($debut < $fin) {
@@ -875,28 +881,31 @@ class AgendasController extends BaseController
             $end = date('H:i:s', strtotime("$debut + " . $duree . " minutes"));
             ($end > $fin) ? $end = $fin : $end;
             $slots[] = [
-                'id'      => $i,
-                'debut'   => $debut,
-                'fin'     => $end,
+                'id'     => $i,
+                'debut'  => $debut,
+                'fin'    => $end,
+                'occupe' => false,
             ];
             $debut = $end;
             $i++;
         }
 
-        $agendaInfos['slots'] = json_encode($slots);
+        // $agendaInfos['slots'] = json_encode($slots);
+        $agendaInfos['slots'] = $slots;
 
-        if ($agendaID) {
-            // on met à jour
-            $agendaModel->update($agendaID, $agendaInfos);
-            $agendaInfos['id'] = $agendaID;
-            $message = 'Agenda mis a jour.';
-            $RespCode = ResponseInterface::HTTP_OK;
-        } else {
-            //on insère
-            $agendaInfos['id_agenda'] = $agendaModel->insert($agendaInfos);
-            $message = 'Agenda ajouté.';
-            $RespCode = ResponseInterface::HTTP_CREATED;
-        }
+        // if ($agendaID) {
+        //     // on met à jour
+        //     $agendaModel->update($agendaID, $agendaInfos);
+        //     $agendaInfos['id'] = $agendaID;
+        //     $message = 'Agenda mis a jour.';
+        //     $RespCode = ResponseInterface::HTTP_OK;
+        // } else {
+
+        //on insère
+        $agendaInfos['id_agenda'] = $agendaModel->insert($agendaInfos);
+        $message = 'Agenda ajouté.';
+        $RespCode = ResponseInterface::HTTP_CREATED;
+        // }
 
         $response = [
             'statut'  => 'ok',
@@ -912,7 +921,115 @@ class AgendasController extends BaseController
      */
     public function update($id = null)
     {
-        return $this->create(null, $id);
+        $rules = [
+            'debut' => [
+                'rules' => 'if_exist|regex_match[/[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}/]',
+                'errors' => ['required' => 'Précisez la date/heure de debut.', 'regex_match' => 'Format de date attendu YYYY-mm-dd HH:ii.']
+            ],
+            'fin'   => [
+                'rules' => 'if_exist|regex_match[/[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}/]',
+                'errors' => ['required' => 'Précisez la date/heure de fin.', 'regex_match' => 'Format de date attendu YYYY-mm-dd HH:ii.']
+            ],
+            'label' => [
+                'rules' => 'if_exist|max_length[50]',
+                'errors' => ['max_length' => 'Le titre doit contenir au plus 50 caractères.']
+            ],
+            'duree' => [
+                'rules' => 'if_exist|less_than[121]|greater_than[10]',
+                'errors' => ['less_than' => 'Durée de consultation trop longue.', 'greater_than' => 'Durée de consultation trop courte.']
+            ],
+            'statut' => [
+                'rules' => 'if_exist|permit_empty',
+            ],
+        ];
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception('');
+            }
+        } catch (\Throwable $th) {
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;
+            $response = [
+                'statut'  => 'no',
+                'message' => $validationError ? $errorsData['errors'] : "Impossible de mettre à jour cet agenda.",
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
+        $input = $this->getRequestInput($this->request);
+
+        $agenda = model("AgendasModel")->asArray()->where('id', $id)->first();
+        if (!$agenda) {
+            $response = [
+                'statut'  => 'no',
+                'message' => "L'agenda spécifié est introuvable.",
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_NOT_FOUND);
+        }
+        // if ($agenda['proprietaire_id'] == $this->request->utilisateur->id) {
+        if ($agenda['proprietaire_id'] == $this->request->utilisateur->id || auth()->user()->inGroup('administrateur')) {
+            $condition = array_filter($agenda['slots'], fn ($sl) => isset($sl['occupe']) && $sl['occupe']);
+            if ($condition) {
+                $response = [
+                    'statut'  => 'no',
+                    'message' => "Vous nepouvez pas modifier cet agenda, il contient des plages occupées.",
+                ];
+                return $this->sendResponse($response, ResponseInterface::HTTP_FORBIDDEN);
+            }
+            if (isset($input['debut'])) {
+                $jour  = date('Y-m-d', strtotime((string)htmlspecialchars($input['debut'])));
+                $debut = date('H:i:s', strtotime((string)htmlspecialchars($input['debut'])));
+                $agenda['jour_dispo'] = $jour;
+                $agenda['heure_dispo_debut'] = $debut;
+            }
+            if (isset($input['fin'])) {
+                $jour = date('Y-m-d', strtotime((string)htmlspecialchars($input['fin'])));
+                $fin  = date('H:i:s', strtotime((string)htmlspecialchars($input['fin'])));
+                $agenda['jour_dispo'] = $jour;
+                $agenda['heure_dispo_fin'] = $fin;
+            }
+            if (isset($input['titre'])) {
+                $agenda['titre'] = $input['titre'];
+            }
+            if (isset($input['statut'])) {
+                $agenda['statut'] = (bool)$input['statut'];
+            }
+            if (isset($input['duree'])) {
+                $agenda['duree'] = (int)$input['duree'];
+            }
+            $i     = 1;
+            $slots = [];
+            $debut = $debut ?? date('H:i:s', strtotime($agenda['heure_dispo_debut']));
+            $fin   = $fin ?? date('H:i:s', strtotime($agenda['heure_dispo_fin']));
+            while ($debut < $fin) {
+                $duree = $agenda['duree'] ?? ConsultationEntity::DEFAULT_DUREE;
+                $end = date('H:i:s', strtotime("$debut + " . $duree . " minutes"));
+                ($end > $fin) ? $end = $fin : $end;
+                $slots[] = [
+                    'id'     => $i,
+                    'debut'  => $debut,
+                    'fin'    => $end,
+                    'occupe' => false,
+                ];
+                $debut = $end;
+                $i++;
+            }
+        } else {
+            $response = [
+                'statut'  => 'no',
+                'message' => "Vous n'avez pas le droit de modifier cet agenda.",
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_FORBIDDEN);
+        }
+
+        $agenda['slots'] = $slots;
+        model("AgendasModel")->update($agenda['id'], $agenda);
+        $response = [
+            'statut'  => 'ok',
+            'message' => 'Agenda mis à jour.',
+        ];
+        return $this->sendResponse($response);
     }
 
     /** @todo think about the use cases

@@ -116,9 +116,9 @@ class SouscriptionsEntity extends Entity
     /**
      * getDocuments
      * 
-     * renvoie les documents associés à cette souscription
+     * renvoie les services fournis par cette souscription
      *
-     * @return object les données du document
+     * @return array les services fournis par la souscription
      */
     public function getDocuments()
     {
@@ -128,5 +128,72 @@ class SouscriptionsEntity extends Entity
         }
 
         return $this?->attributes['documents'] ?? [];
+    }
+
+    /**
+     * renvoie les services associés à cette souscription
+     *
+     * @return object les données du service
+     */
+    public function getServices()
+    {
+        if (!isset($this->attributes['services'])) {
+            $this->attributes['services'] = model('SouscriptionServicesModel')->join('services', 'services.id = souscription_services.service_id')
+                ->where('souscription_id', $this->attributes['id'])
+                ->findAll();
+        }
+
+        return $this?->attributes['services'];
+    }
+
+    /**
+     * Retrieves a service by its ID from the list of services associated with this object.
+     *
+     * @param int $serviceId The ID of the service to retrieve.
+     * @throws \Exception If the service with the given ID is not found.
+     * @return mixed The service object with the given ID.
+     */
+    public function getService(int $serviceId)
+    {
+        $services = $this->getServices();
+        $service = array_filter($services, fn ($serv) => $serv->id == $serviceId);
+        $service = reset($service);
+        if (!$service) {
+            throw new \Exception("Ce service n'est pas offert par cette souscription", 1);
+        }
+        return $service;
+    }
+
+    public function isValid()
+    {
+        return $this->attributes['etat'] == self::ACTIF;
+    }
+
+    /**
+     * Renvoie le montant couvert par cette souscription,
+     * pour le service spécifié
+     *
+     * @param  int $serviceId
+     * @return float
+     */
+    public function coverage(int $serviceId, float $cout)
+    {
+        $service = array_filter($this->getServices(), fn ($serv) => $serv->id == $serviceId);
+        $service = reset($service);
+        if (!$service) {
+            throw new \Exception("Ce service n'est pas offert par cette souscription", 1);
+        }
+        $prixCouverture = $service->prix_couverture - $service->prix_couvert;
+        $qtiteCouverture = $service->quantite - $service->quantite_utilise;
+
+        if (($prixCouverture <= 0) || ($qtiteCouverture <= 0)) {
+            return 0;
+        }
+        if ($service->taux_couverture < 100) {
+            $toCover = $cout * $service->taux_couverture / 100;
+            return $prixCouverture - $toCover > 0 ? $toCover : $prixCouverture;
+        } else {
+            return $prixCouverture - $cout > 0 ? $cout : $prixCouverture;
+        }
     }
 }

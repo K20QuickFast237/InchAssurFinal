@@ -60,6 +60,33 @@ class LocalisationsController extends BaseController
     }
 
     /**
+     * Retrieve the details of a location
+     *
+     * @param  int $id - the specified location Identifier
+     * @return ResponseInterface The HTTP response.
+     */
+    public function show($id = null)
+    {
+        try {
+            $data = model("LocalisationsModel")->where('id', $id)->first();
+            $response = [
+                'statut'  => 'ok',
+                'message' => 'Détails de la Localisation.',
+                'data'    => $data ?? throw new \Exception('Localisation introuvable.'),
+            ];
+            return $this->sendResponse($response);
+        } catch (\Throwable $th) {
+            $response = [
+                'statut'  => 'no',
+                'message' => 'Localisation introuvable.',
+                'data'    => [],
+                'errors'  => $th->getMessage(),
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_NOT_ACCEPTABLE);
+        }
+    }
+
+    /**
      * Retourne la liste des localisations disponibles
      *
      * @return ResponseInterface The HTTP response.
@@ -206,7 +233,7 @@ class LocalisationsController extends BaseController
         $rules = [
             'localisations'   => 'required',
             'localisations.*' => 'integer|is_not_unique[localisations.id]',
-            'default'         => 'if_exist'
+            'default'         => 'if_exist|permit_empty'
         ];
         $input = $this->getRequestInput($this->request);
 

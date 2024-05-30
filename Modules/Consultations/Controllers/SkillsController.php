@@ -58,6 +58,33 @@ class SkillsController extends BaseController
         return $this->sendResponse($response);
     }
 
+    /**
+     * Retrieve the details of a skill
+     *
+     * @param  int $id - the specified skill Identifier
+     * @return ResponseInterface The HTTP response.
+     */
+    public function show($id = null)
+    {
+        try {
+            $data = model("SkillsModel")->where('id', $id)->first();
+            $response = [
+                'statut'  => 'ok',
+                'message' => 'Détails du skill.',
+                'data'    => $data ?? throw new \Exception('Skill introuvable.'),
+            ];
+            return $this->sendResponse($response);
+        } catch (\Throwable $th) {
+            $response = [
+                'statut'  => 'no',
+                'message' => 'Skill introuvable.',
+                'data'    => [],
+                'errors'  => $th->getMessage(),
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_NOT_ACCEPTABLE);
+        }
+    }
+
     public function showAll()
     {
         $skills = model("SkillsModel")->findAll() ?? [];
@@ -369,19 +396,12 @@ class SkillsController extends BaseController
         }
 
         $rules = [
-            'idSkill' => [
-                'rules' => 'if_exist|is_not_unique[skills.id]',
-                'errors' => ['is_not_unique' => 'ce skill est inconnu.']
-            ],
             "description" => "if_exist",
             "cout" => [
                 'rules' => 'if_exist|numeric',
                 'errors' => ['numeric' => 'La valeur du coût est incorrect.']
             ],
-            "isExpert" => [
-                'rules' => 'if_exist|integer|in_list[0,1]',
-                'errors' => ['in_list' => 'valeur d\'expertise inappropriée.']
-            ],
+            "isExpert" => 'if_exist|permit_empty',
             "coutExpert" => [
                 'rules' => 'if_exist|numeric',
                 'errors' => ['numeric' => 'La valeur du coût d\'expertise est incorrecte.']
@@ -394,20 +414,17 @@ class SkillsController extends BaseController
         try {
             if (!$this->validate($rules)) {
                 $hasError = true;
-                throw new \Exception();
+                throw new \Exception('');
             }
 
-            $skillInfos = [
-                "medecin_id" => $med->id,
-                "skill_id" => $input['idSkill'],
-                "description_perso" => $input['description'] ?? null,
-                "cout" => $input['cout'],
-                "isExpert" => $input['isExpert'] ?? false,
-                "cout_expert" => $input['coutExpert'] ?? null,
-            ];
+            $model->where('medecin_id', $med->id)
+                ->where('skill_id', $skillID);
+            isset($input['coutExpert']) ? $model->set("cout_expert", $input['coutExpert']) : null;
+            isset($input['description']) ? $model->set("description_perso", $input['description']) : null;
+            isset($input['cout']) ? $model->set("cout", $input['cout']) : null;
+            isset($input['isExpert']) ? $model->set("isExpert", (bool)$input['isExpert']) : null;
 
-            $model->update($skillID, $skillInfos);
-
+            $model->update();
             $response = [
                 'statut'  => 'ok',
                 'message' => "Skill mis à jour pour le médecin.",
@@ -419,10 +436,16 @@ class SkillsController extends BaseController
             $errorsData = $this->getErrorsData($th, isset($hasError));
             $response = [
                 'statut'  => 'no',
-                'message' => "Impossible d'associer ce skill au médecin.",
+                'message' => "Impossible de mettre à jour ce skill du médecin.",
                 'errors'  => $errorsData['errors'],
             ];
             return $this->sendResponse($response, $errorsData['code']);
         }
+        $response = [
+            'statut'  => 'no',
+            'message' => "Aucune information à modifier.",
+            'data'    => [],
+        ];
+        return $this->sendResponse($response, ResponseInterface::HTTP_NOT_MODIFIED);
     }
 }

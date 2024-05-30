@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Consultation\Models;
+namespace Modules\Consultations\Models;
 
 use CodeIgniter\Model;
 use Modules\Consultations\Entities\ConsultationEntity;
@@ -8,9 +8,9 @@ use Modules\Consultations\Entities\ConsultationEntity;
 class ConsultationsModel extends Model
 {
     const DEFAULT_DUREE = 30;
-    const ENATTENTE = 0, VALIDE = 1, REFUSE = 2, ENCOURS = 3, TERMINE = 4, ANNULE = 5, TRANSMIS = 6, ECHOUE = 7;
+    const ENATTENTE = 0, VALIDE = 1, EXPIREE = 2, ENCOURS = 3, TERMINE = 4, ANNULE = 5, TRANSMIS = 6, ECHOUE = 7;
     const OFFICE_CONSULT = 0, ONLINE_CONSULT = 1, HOME_CONSULT = 2;
-    public static $rdvStatut = ['En Attente', 'Validé', 'Reporté', 'En Cours', 'Terminé', 'Annulé', 'Transmis', 'Échoué'];
+    public static $rdvStatut = ['En Attente', 'Validé', 'Expiré', 'En Cours', 'Terminé', 'Annulé', 'Transmis', 'Échoué'];
     // public static $canneaux = ['Au Cabinet', 'En Ligne', 'A Domicile'];
 
     protected $DBGroup          = 'default';
@@ -21,13 +21,14 @@ class ConsultationsModel extends Model
     protected $returnType       = ConsultationEntity::class;
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['objet', 'description', 'duree', 'heure', 'prix', 'isAssured', 'bilan', 'previous_id', 'isSecondAdvice', 'statut', 'canal', 'skill', 'date', 'code', 'medecin_user_id', 'patient_user_id', 'localisation_id', 'langue', 'souscription_id'];
+    protected $allowedFields    = ['objet', 'description', 'duree', 'heure', 'prix', 'isAssured', 'bilan', 'previous_id', 'isExpertise', 'isSecondAdvice', 'statut', 'canal', 'skill', 'date', 'code', 'medecin_user_id', 'patient_user_id', 'localisation_id', 'langue', 'souscription_id'];
 
     // Dates
     protected $useTimestamps = true;  // autorise l'ajout automatique de la valeur à l'insertion
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'dateCreation';
-    protected $updatedField  = 'dateModification';
+    protected $updatedField  = '';
+    // protected $updatedField  = 'dateModification';
     protected $deletedField  = '';
 
     // Validation

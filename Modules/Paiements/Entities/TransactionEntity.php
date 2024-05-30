@@ -6,6 +6,7 @@ use CodeIgniter\Entity\Entity;
 
 class TransactionEntity extends Entity
 {
+    // const TOTALE = 'Totale', PARTIEL = 'Partielle';
     const INITIE = 0, TERMINE = 1, EN_COURS = 2;
     public static $etats = ["Initiée", "Terminée", "En Cours"];
 

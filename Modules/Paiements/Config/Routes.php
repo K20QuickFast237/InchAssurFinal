@@ -25,6 +25,8 @@ $routes->group('paiements', ['namespace' => 'Modules\Paiements\Controllers'], st
     $routes->get('modes', 'PaiementsController::getAllmodePaiement');
     $routes->post('notify', 'PaiementsController::setPayStatus');
     $routes->post('statut', 'PaiementsController::localSetPayStatus');
+    $routes->post('confirmConsult', 'PaiementsController::localSetConsultPayStatus');
+    $routes->post('notfyConsult', 'PaiementsController::setConsultPayStatus');
 });
 
 /*--------------------- For transactions ----------------------------- */

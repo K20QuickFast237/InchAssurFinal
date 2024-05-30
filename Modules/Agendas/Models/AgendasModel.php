@@ -36,9 +36,9 @@ class AgendasModel extends Model
 
     // Callbacks
     protected $allowCallbacks = true;
-    protected $beforeInsert   = [];
+    protected $beforeInsert   = ['encodeSlots'];
     protected $afterInsert    = [];
-    protected $beforeUpdate   = [];
+    protected $beforeUpdate   = ['encodeSlots'];
     protected $afterUpdate    = [];
     protected $beforeFind     = [];
     protected $afterFind      = ['decodeSlots'];
@@ -69,6 +69,37 @@ class AgendasModel extends Model
         }
         return $data;
     }
+
+    protected function encodeSlots(array $data)
+    {
+        if ($data['data'] === null) {
+            return $data;
+        }
+        if (isset($data['data']->slots)) {
+            $data['data']->slots = json_encode($data['data']->slots);
+        } else
+            
+        if (isset($data['data']['slots'])) {
+            $data['data']['slots'] = json_encode($data['data']['slots']);
+        } else {
+            for ($i = 0; $i < count($data['data']); $i++) {
+                if (isset($data['data'][$i]->slots)) {
+                    $data['data'][$i]->slots = json_encode($data['data'][$i]->slots);
+                } else
+                if (isset($data['data'][$i]['slots'])) {
+                    $data['data'][$i]['slots'] = json_encode($data['data'][$i]['slots']);
+                }
+            }
+        }
+        return $data;
+    }
+
+
+
+
+
+
+
     // n'est plus utilisée
     protected function inFormatJour(array $data)
     {

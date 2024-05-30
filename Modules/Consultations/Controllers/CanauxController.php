@@ -46,6 +46,33 @@ class CanauxController extends BaseController
     }
 
     /**
+     * Retrieve the details of a canal
+     *
+     * @param  int $id - the specified canal Identifier
+     * @return ResponseInterface The HTTP response.
+     */
+    public function show($id = null)
+    {
+        try {
+            $data = model("CanauxModel")->where('id', $id)->first();
+            $response = [
+                'statut'  => 'ok',
+                'message' => 'Détails du canal.',
+                'data'    => $data ?? throw new \Exception('Canal introuvable.'),
+            ];
+            return $this->sendResponse($response);
+        } catch (\Throwable $th) {
+            $response = [
+                'statut'  => 'no',
+                'message' => 'Canal introuvable.',
+                'data'    => [],
+                'errors'  => $th->getMessage(),
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_NOT_ACCEPTABLE);
+        }
+    }
+
+    /**
      * Ajoute un canal
      *
      * @return ResponseInterface The HTTP response.
