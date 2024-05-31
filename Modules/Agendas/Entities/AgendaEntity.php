@@ -40,7 +40,11 @@ class AgendaEntity extends Entity
         return $this->attributes['proprietaire_id'];
     }
 
-    public function removeSlot(int $slotID)
+    public function unsetSlot(int $slotID)
+    {
+        return $this->removeSlot($slotID);
+    }
+    public function removeSlot(int $slotID) // The name will be changed to unsetSlot
     {
         /* old method, not more used
             $prev = count($this->attributes['slots']);
@@ -63,7 +67,24 @@ class AgendaEntity extends Entity
         });
         if (count($condition) <= 0) {
             model("AgendasModel")->where('id', $this->attributes['id'])
-                ->set('etat', self::NOT_AVAILABLE)
+                ->set('statut', self::NOT_AVAILABLE)
+                ->update();
+        }
+    }
+
+    public function setSlot(int $slotID)
+    {
+        $this->attributes['slots'] = array_map(function ($sl) use ($slotID) {
+            if ($sl['id'] == $slotID) {
+                $sl['occupe'] = false;
+            }
+            return $sl;
+        }, $this->attributes['slots']);
+
+        // verify state
+        if (!$this->attributes['statut']) {
+            model("AgendasModel")->where('id', $this->attributes['id'])
+                ->set('statut', self::AVAILABLE)
                 ->update();
         }
     }

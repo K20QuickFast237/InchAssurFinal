@@ -501,6 +501,12 @@ class PaiementsController extends ResourceController
         exit('received');
     }
 
+    /** @todo pourrait etre fait sans */
+    public function setConsultPayStatus()
+    {
+        /* To be implemented*/
+    }
+
     public function localSetConsultPayStatus()
     {
         $rules = [

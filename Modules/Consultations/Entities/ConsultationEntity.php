@@ -15,15 +15,16 @@ class ConsultationEntity extends Entity
 
     protected $datamap = [
         'idConsultation' => 'id',
-        'heureDebut'     => 'heure_dispo_debut',
-        'heureFin'       => 'heure_dispo_fin',
-        'jour'           => 'jour_dispo',
-        'proprietaire'   => 'proprietaire_id',
+        'localisation'   => 'localisation_id',
+        'medecin'        => 'medecin_user_id',
+        'patient'        => 'patient_user_id',
     ];
 
     // Defining a type with parameters
     protected $casts = [
         'id'             => "integer",
+        'duree'          => "integer",
+        'prix'           => "float",
         'isExpertise'    => "?boolean",
         'isSecondAdvice' => "?boolean",
         'isAssured'      => "?boolean",
@@ -37,5 +38,22 @@ class ConsultationEntity extends Entity
     public function showServiceInfo()
     {
         return model('ServicesModel')->where('nom', 'Consultations')->first();
+    }
+
+    public function getMedecinUserId()
+    {
+        if (isset($this->attributes['medecin_user_id']) && gettype($this->attributes['medecin_user_id']) === 'string') {
+            $this->attributes['medecin'] = model("UtilisateursModel")->getSimplifiedArray($this->attributes['medecin_user_id']);
+        }
+
+        return $this->attributes['medecin'];
+    }
+    public function getPatientUserId()
+    {
+        if (isset($this->attributes['patient_user_id']) && gettype($this->attributes['patient_user_id']) === 'string') {
+            $this->attributes['patient'] = model("UtilisateursModel")->getSimplifiedArray($this->attributes['patient_user_id']);
+        }
+
+        return $this->attributes['patient'];
     }
 }

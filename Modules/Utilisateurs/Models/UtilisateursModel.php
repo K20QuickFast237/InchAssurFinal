@@ -76,7 +76,7 @@ class UtilisateursModel extends Model
             "nom"  => $data['nom'],
             "prenom" => $data['prenom'],
             "photoProfil" => [
-                "idImage" => $data['id'],
+                "idImage" => (int)$data['id'],
                 "url" => $data['isLink'] ? $data['uri'] : base_url($data['uri'])
             ],
         ];

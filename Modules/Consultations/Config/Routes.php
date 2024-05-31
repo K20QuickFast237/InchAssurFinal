@@ -28,6 +28,15 @@ $routes->resource('rdvs', [
     'except' => 'new,edit',
 ]);
 
+/******************************* Les Consultations *********************************/
+$routes->post('consultations/(:segment)', '\Modules\Consultations\Controllers\ConsultationsController::update/$1');
+$routes->get('allConsultations', '\Modules\Consultations\Controllers\ConsultationsController::showAll');
+$routes->resource('consultations', [
+    'controller' => '\Modules\Consultations\Controllers\ConsultationsController',
+    'placeholder' => '(:segment)',
+    'except' => 'new,edit',
+]);
+
 /******************************* Les Villes *********************************/
 $routes->post('villes/(:num)', '\Modules\Consultations\Controllers\VillesController::update/$1');
 $routes->resource('villes', [

@@ -151,10 +151,10 @@ class RdvsController extends BaseController
                 'rules'  => 'required_with[withAssur]|permit_empty|is_not_unique[souscriptions.id]',
                 'errors' => ['required' => 'Souscription requise pour consultation avec asssurance.']
             ],
-            'duree' => [
-                'rules'  => 'if_exist|numeric',
-                'errors' => ['if_exist' => 'Précisez la duree du Rendez-vous', 'numeric' => 'Duree invalide.']
-            ],
+            // 'duree' => [
+            //     'rules'  => 'if_exist|numeric',
+            //     'errors' => ['if_exist' => 'Précisez la duree du Rendez-vous', 'numeric' => 'Duree invalide.']
+            // ],
             'canal' => [
                 'rules'  => 'required|is_not_unique[canaux.nom]',
                 'errors' => ['required' => 'Précisez le canal de consultation.', 'is_not_unique' => 'Canal de consultation invalide.']
@@ -273,11 +273,11 @@ class RdvsController extends BaseController
             'statut'          => ConsultationEntity::ENATTENTE,
         ];
 
-        if (isset($input['duree'])) {
-            $consultationInfos['duree'] = $input['duree'];
-        } else {
-            $consultationInfos['duree'] = ConsultationEntity::DEFAULT_DUREE;
-        }
+        // if (isset($input['duree'])) {
+        //     $consultationInfos['duree'] = $input['duree'];
+        // } else {
+        //     $consultationInfos['duree'] = ConsultationEntity::DEFAULT_DUREE;
+        // }
         if ($consultationInfos['isSecondAdvice']) {
             $consultationInfos['previous_id'] = (int)$input['idPrevious'];
         }
@@ -472,13 +472,53 @@ class RdvsController extends BaseController
         return $this->sendResponse($response);
     }
 
-    /** @todo think about the use cases
-     * Modifie un rdv
+    /**
+     * Modifie un rdv (l'objet, la date et/ou l'heure)
      *
      * @return ResponseInterface The HTTP response.
      */
-    public function update($id = null)
+    public function update($identifier)
     {
+        $rules = [
+            'heure' => [
+                'rules'  => 'if_exist|valid_date[H:i]',
+                'errors' => ['valid_date' => 'Format d\'heure attendu hh:mm.']
+            ],
+            'date'  => [
+                'rules'  => 'if_exist|valid_date[Y-m-d]',
+                'errors' => ['valid_date' => 'Format de date attendu YYYY-MM-DD.']
+            ],
+            'objet' => 'if_exist',
+        ];
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception('');
+            }
+        } catch (\Throwable $th) {
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;
+            $response = [
+                'statut'  => 'no',
+                'message' => $validationError ? $errorsData['errors'] : "Impossible de mettre à jour ce Rendez-vous.",
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
+        $input = $this->getRequestInput($this->request);
+
+        $identifier = $this->getIdentifier($identifier);
+        $rdv = model("RdvsModel")->where($identifier['name'], $identifier['value']);
+        foreach ($input as $key => $value) {
+            $rdv->set($key, $value);
+        }
+        $rdv->update();
+
+        $response = [
+            'statut'  => 'ok',
+            'message' => 'Rendez-vous mis à jour.',
+        ];
+        return $this->sendResponse($response);
     }
 
     /** @todo think about the use cases
