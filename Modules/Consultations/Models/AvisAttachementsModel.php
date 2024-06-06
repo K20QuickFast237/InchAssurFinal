@@ -4,17 +4,17 @@ namespace Modules\Consultations\Models;
 
 use CodeIgniter\Model;
 
-class SkillsMotifModel extends Model
+class AvisAttachementsModel extends Model
 {
     protected $DBGroup          = 'default';
-    protected $table            = 'skills_motif';
+    protected $table            = 'avis_attachements';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $insertID         = 1;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['skill_id', 'motif_id'];
+    protected $allowedFields    = ['document_id', 'avis_id'];
 
     // Dates
     protected $useTimestamps = false;
@@ -39,16 +39,4 @@ class SkillsMotifModel extends Model
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
-
-    public function findBulkMotifs(array $skillIds)
-    {
-        // $data = $this->select('id_motif as id, nomMotif as motif, description')
-        $data = $this->select('distinct(motifs.id), motifs.nom, description, skill_id')
-            ->join('motifs', 'motif_id = motifs.id', 'left')
-            ->whereIn('skill_id', $skillIds)
-            // ->orderBy('id', 'ASC')
-            // ->orderBy('nom', 'ASC')
-            ->findAll();
-        return $data;
-    }
 }

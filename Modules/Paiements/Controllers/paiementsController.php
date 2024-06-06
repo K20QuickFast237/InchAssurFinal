@@ -12,6 +12,7 @@ use CodeIgniter\RESTful\ResourceController;
 use CodeIgniter\HTTP\ResponseInterface;
 use Modules\Assurances\Entities\SouscriptionsEntity;
 use Modules\Assurances\Models\SouscriptionsModel;
+use Modules\Consultations\Entities\AvisExpertEntity;
 use Modules\Consultations\Entities\ConsultationEntity;
 use Modules\Paiements\Entities\LignetransactionEntity;
 use Modules\Paiements\Entities\PaiementEntity;
@@ -372,7 +373,7 @@ class PaiementsController extends ResourceController
         ];
         $transactInfo['id'] = model("TransactionsModel")->insert($transactInfo);
         model("TransactionLignesModel")->insert(['transaction_id' => $transactInfo['id'], 'ligne_id' => $ligneInfo->id]);
-        model("TransactionsModel")->db->transCommit();
+
         // 3- On initie le paiement,
         $operateurId = model("PaiementModesModel")->where('operateur', $input['operateur'])->findColumn('id')[0];
         $paiementInfo = array(
@@ -383,8 +384,8 @@ class PaiementsController extends ResourceController
             'auteur_id' => $this->request->utilisateur->id,
             'transaction_id' => $transactInfo['id'],
         );
-        model("PaiementsModel")->insert($paiementInfo);
-
+        $paiementInfo['id'] = model("PaiementsModel")->insert($paiementInfo);
+        model("TransactionsModel")->db->transCommit();
         // 4- Mise à jour de la souscription
         /** Cette étape est déplacée dans la gestion de la réponse de l'API. */
 
@@ -501,8 +502,139 @@ class PaiementsController extends ResourceController
         exit('received');
     }
 
+    public function payForAvis()
+    {
+        /* Effectue le paiement pour la demande d'avis expert initiée par le médecin. */
+
+        $rules = [
+            'operateur'  => [
+                'rules'  => 'required|is_not_unique[paiement_modes.operateur]',
+                'errors' => ['required' => 'Opérateur non défini.', 'is_not_unique' => 'Opérateur invalide'],
+            ],
+        ];
+        $pay_rules = [
+            'operateur'  => [
+                'rules'  => 'required|is_not_unique[paiement_modes.operateur]',
+                'errors' => ['required' => 'Opérateur non défini.', 'is_not_unique' => 'Opérateur invalide'],
+            ],
+            'telephone'  => [
+                'rules'  => 'required|numeric',
+                'errors' => ['required' => 'Numéro de téléphone requis pour ce mode de paiement.', 'numeric' => 'Numéro de téléphone invalide.']
+            ],
+            'returnURL'  => [
+                'rules'  => 'required|valid_url',
+                'errors' => ['required' => 'L\'URL de retour doit être spécifiée pour ce mode de paiement.', 'valid_url' => 'URL de retour non conforme.']
+            ],
+            // 'pays'       => [
+            //     'rules'  => 'if_exist|is_not_unique[paiement_pays.code]',
+            //     'errors' => ['is_not_unique' => 'Pays non pris en charge.'],
+            // ],
+            'idAvis' => [
+                'rules'  => 'required|is_not_unique[avisexpert.id]',
+                'errors' => ['required' => 'Identification d\'avis incorrecte.', 'is_not_unique' => 'Identification d\'avis incorrecte.'],
+            ],
+        ];
+
+        $input = $this->getRequestInput($this->request);
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception('');
+            }
+            if ($input['operateur'] != 'PORTE_FEUILLE' && !$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception('');
+            }
+        } catch (\Throwable $th) {
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;
+            $response = [
+                'statut'  => 'no',
+                'message' => $validationError ? $errorsData['errors'] : "Impossible d'envoyer cette demande.",
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
+
+
+        // Récupérer les éléments de transaction
+        $avis = model('AvisExpertModel')->find($input['idAvis']);
+        $transaction = model('TransactionsModel')
+            ->join('transaction_lignes', 'transactions.id=transaction_id', 'left')
+            ->join('lignetransactions',  'ligne_id=lignetransactions.id', 'left')
+            ->where('produit_group_name', 'Avis Expert')
+            ->where('produit_id', $avis->id)
+            ->first();
+
+        $amount = (float)$transaction->prix_total_net;
+        // Déterminer le moyen de paiement
+        $paiementInfo = [
+            'code'      => random_string('alnum', 10),
+            'montant'   => $amount,
+            'statut'    => PaiementEntity::VALIDE,
+            'mode_id'   => model("PaiementModesModel")->where('operateur', $input['operateur'])->findColumn('id')[0] ?? 1,
+            'auteur_id' => $this->request->utilisateur->id,
+            'transaction_id' => $transaction->transaction_id,
+        ];
+        model("PaiementsModel")->db->transBegin();
+        if ($input['operateur'] == 'PORTE_FEUILLE') {
+            $portefeuille = model('PortefeuillesModel')->where('utilisateur_id', $this->request->utilisateur->id)->first();
+            // Débiter le porte feuille
+            try {
+                // déduire le montant du portefeuille
+                $portefeuille->debit($amount);
+            } catch (\Throwable $th) {
+                $response = [
+                    'statut'  => 'no',
+                    'message' => $th->getMessage(),
+                ];
+                return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+            }
+
+            // Modifier les status
+            model('TransactionsModel')->update($transaction->transaction_id, ['status' => TransactionEntity::TERMINE]);
+            model('AvisExpertModel')->update($avis->id, ['status' => AvisExpertEntity::EN_COURS]);
+            $message = "Paiement réussi.";
+        } else {
+            // Initialiser la transaction Monetbill
+            $monetbil_args = array(
+                'amount'      => $amount,
+                'phone'       => $input['telephone'] ?? $this->request->utilisateur->tel1,
+                'country'     => $input['pays'] ?? 'CM',
+                'phone_lock'  => false,
+                'locale'      => 'fr', // Display language fr or en
+                'operator'    => $input['operateur'],
+                'item_ref'    => $avis->id,
+                'payment_ref' => $paiementInfo['code'],
+                'user'        => $this->request->utilisateur->code,
+                'return_url'  => $input['returnURL'],
+                'notify_url'  => base_url('paiements/notfyAvis'),
+                'logo'        => base_url("uploads/images/logoinch.jpeg"),
+            );
+            // This example show payment url
+            $data    = ['url' => \Monetbil::url($monetbil_args)];
+            $message = "Paiement Initié.";
+            $paiementInfo['status'] = PaiementEntity::EN_COURS;
+        }
+        // Ajouter le paiement
+        model("PaiementsModel")->insert($paiementInfo);
+        model("PaiementsModel")->db->transCommit();
+        $response = [
+            'statut'  => 'ok',
+            'message' => $message,
+            'data'    => $data ?? [],
+        ];
+        return $this->sendResponse($response);
+    }
+
     /** @todo pourrait etre fait sans */
     public function setConsultPayStatus()
+    {
+        /* To be implemented*/
+    }
+
+    /** @todo pourrait etre fait sans */
+    public function setAvisPayStatus()
     {
         /* To be implemented*/
     }
@@ -598,9 +730,92 @@ class PaiementsController extends ResourceController
             // mettre à jour le statut du paiement
             model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::ECHOUE)->update();
             // mettre à jour le statut de la transaction
-            model("TransactionsModel")->update($transactInfo->id, ['etat' => TransactionEntity::TERMINE]);
+            // model("TransactionsModel")->update($transactInfo->id, ['etat' => TransactionEntity::TERMINE]);
             // mettre à jour le statut de la consultation
-            model("ConsultationsModel")->where("code", $item_ref)->set('statut', ConsultationEntity::ECHOUE)->update();
+            // model("ConsultationsModel")->where("code", $item_ref)->set('statut', ConsultationEntity::ECHOUE)->update();
+            $message = "Echec du Paiement.";
+            $code = ResponseInterface::HTTP_BAD_REQUEST;
+        }
+        $response = [
+            'statut'  => 'ok',
+            'message' => $message,
+            'data'    => [],
+        ];
+        return $this->sendResponse($response, $code);
+    }
+
+    public function localSetAvisPayStatus()
+    {
+        $rules = [
+            'transaction_id' => 'required',
+            'item_ref'       => 'required',
+            'payment_ref'    => 'required',
+            'payment_status' => 'required',
+        ];
+
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception('');
+            }
+        } catch (\Throwable $th) {
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $response = [
+                'statut'  => 'no',
+                'message' => $errorsData['errors'],
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
+        $input = $this->getRequestInput($this->request);
+        $item_ref       = $input['item_ref'];
+        $payment_ref    = $input['payment_ref'];
+        $payment_status = $input['payment_status'];
+        /*
+            mettre à jour le statut du paiement
+            mettre à jour l'agenda du médecin (en cas de validation)
+            mettre à jour le statut de la consultation
+            mettre à jour le statut de la transaction
+        */
+        // Mettre à jour le statut de la transaction
+        $transaction = model('TransactionsModel')
+            ->join('transaction_lignes', 'transactions.id=transaction_id', 'left')
+            ->join('lignetransactions',  'ligne_id=lignetransactions.id', 'left')
+            ->where('produit_group_name', 'Avis Expert')
+            ->where('produit_id', $item_ref)
+            ->first();
+        if (!$transaction) {
+            $response = [
+                'statut'  => 'no',
+                'message' => 'Transaction introuvable',
+                'data'    => [],
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+        }
+
+        if (Monetbil::STATUS_SUCCESS == $payment_status) {
+            // Successful payment!
+            // mettre à jour le statut du paiement
+            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::VALIDE)->update();
+            $message = "Paiement Réussi.";
+            $code = ResponseInterface::HTTP_OK;
+            // mettre à jour le statut de la transaction
+            model("TransactionsModel")->update($transaction->transaction_id, ['etat' => TransactionEntity::TERMINE]);
+            // mettre à jour le statut de l'avis
+            model('AvisExpertModel')->update($item_ref, ['status' => AvisExpertEntity::EN_COURS]);
+        } elseif (Monetbil::STATUS_CANCELLED == $payment_status) {
+            // mettre à jour le statut du paiement
+            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::ANNULE)->update();
+            // mettre à jour le statut de la transaction
+            model("TransactionsModel")->update($transaction->transaction_id, ['etat' => TransactionEntity::TERMINE]);
+            // mettre à jour le statut de l'avis
+            model('AvisExpertModel')->update($item_ref, ['status' => AvisExpertEntity::ANNULE]);
+            $message = "Paiement Annulé.";
+            $code = ResponseInterface::HTTP_BAD_REQUEST;
+        } else {
+            // Payment failed!
+            // mettre à jour le statut du paiement
+            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::ECHOUE)->update();
             $message = "Echec du Paiement.";
             $code = ResponseInterface::HTTP_BAD_REQUEST;
         }

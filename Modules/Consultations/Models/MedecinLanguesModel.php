@@ -10,7 +10,7 @@ class MedecinLanguesModel extends Model
     protected $table            = 'medecin_langues';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
-    protected $insertID         = 0;
+    protected $insertID         = 1;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;

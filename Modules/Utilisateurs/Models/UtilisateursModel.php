@@ -89,12 +89,12 @@ class UtilisateursModel extends Model
             ->asArray()->whereIn('utilisateurs.id', $ids)->findAll();
         $data = array_map(function ($e) {
             return [
-                "idUtilisateur" => $e['idUtilisateur'],
+                "idUtilisateur" => (int)$e['idUtilisateur'],
                 "code" => $e['code'],
                 "nom"  => $e['nom'],
                 "prenom" => $e['prenom'],
                 "photoProfil" => [
-                    "idImage" => $e['idImage'],
+                    "idImage" => (int)$e['idImage'],
                     "url" => $e['isLink'] ? $e['uri'] : base_url($e['uri'])
                 ],
             ];

@@ -10,7 +10,7 @@ class OrdonnancesModel extends Model
     protected $table            = 'ordonnances';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
-    protected $insertID         = 0;
+    protected $insertID         = 1;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;

@@ -11,7 +11,7 @@ class CanauxModel extends Model
     protected $table            = 'canaux';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
-    protected $insertID         = 0;
+    protected $insertID         = 1;
     protected $returnType       = CanalEntity::class;
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;

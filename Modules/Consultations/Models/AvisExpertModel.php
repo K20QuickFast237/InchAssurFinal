@@ -11,11 +11,11 @@ class AvisExpertModel extends Model
     protected $table            = 'avisexpert';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
-    protected $insertID         = 0;
+    protected $insertID         = 1;
     protected $returnType       = AvisExpertEntity::class;
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['medecin_sender_id', 'medecin_receiver_id', 'consultation_id', 'skill', 'bilan', 'statut'];
+    protected $allowedFields    = ['medecin_sender_id', 'medecin_receiver_id', 'consultation_id', 'skill', 'bilan', 'description', 'statut', 'isFavorable'];
 
     // Dates
     protected $useTimestamps = true;

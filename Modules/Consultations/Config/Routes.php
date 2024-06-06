@@ -30,9 +30,20 @@ $routes->resource('rdvs', [
 
 /******************************* Les Consultations *********************************/
 $routes->post('consultations/(:segment)', '\Modules\Consultations\Controllers\ConsultationsController::update/$1');
+$routes->post('consultations/(:segment)/avisExpert', '\Modules\Consultations\Controllers\ConsultationsController::askAvisExpert/$1');
 $routes->get('allConsultations', '\Modules\Consultations\Controllers\ConsultationsController::showAll');
 $routes->resource('consultations', [
     'controller' => '\Modules\Consultations\Controllers\ConsultationsController',
+    'placeholder' => '(:segment)',
+    'except' => 'new,edit',
+]);
+
+/******************************* Les avisExpert *********************************/
+$routes->post('avisexpert/(:segment)', '\Modules\Consultations\Controllers\AvisExpertsController::update/$1');
+$routes->delete('avisexpert/(:segment)/document/(:num)', '\Modules\Consultations\Controllers\AvisExpertsController::delateDoc/$1/$2');
+$routes->get('allAvisexpert', '\Modules\Consultations\Controllers\AvisExpertsController::showAll');
+$routes->resource('avisexpert', [
+    'controller' => '\Modules\Consultations\Controllers\AvisExpertsController',
     'placeholder' => '(:segment)',
     'except' => 'new,edit',
 ]);
@@ -94,6 +105,8 @@ $routes->resource('canaux', [
 $routes->get('allSkills', '\Modules\Consultations\Controllers\SkillsController::showAll');
 $routes->group('skills', ['namespace' => 'Modules\Consultations\Controllers'], static function ($routes) {
     $routes->post('(:num)', 'SkillsController::update/$1');
+    $routes->get('(:num)/experts', 'SkillsController::getMedExperts/$1');
+    $routes->get('(:num)/medecin', 'SkillsController::getMeds/$1');
     $routes->get('(:num)/motifs', 'SkillsController::getMotifs/$1');
     $routes->post('(:num)/motifs', 'SkillsController::setMotifs/$1');
     $routes->get('medecin/(:segment)', 'SkillsController::index/$1');

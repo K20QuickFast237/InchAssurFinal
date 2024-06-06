@@ -25,7 +25,7 @@ class ConsultationEntity extends Entity
         'id'             => "integer",
         'duree'          => "integer",
         'prix'           => "float",
-        'isExpertise'    => "?boolean",
+        'withExpertise'  => "?boolean",
         'isSecondAdvice' => "?boolean",
         'isAssured'      => "?boolean",
         'statut'         => "etatcaster[En Attente,Validé,Expiré,En Cours,Terminé,Annulé,Transmis,Échoué]",
@@ -55,5 +55,32 @@ class ConsultationEntity extends Entity
         }
 
         return $this->attributes['patient'];
+    }
+    public function getExpertise()
+    {
+        if (!isset($this->attributes['expertise'])) {
+            $this->attributes['expertise'] = model("AvisExpertModel")->where('consultation_id', $this->attributes['id'])->first();
+        }
+
+        return $this->attributes['expertise'];
+    }
+
+    public function getLocalisationId()
+    {
+        if (isset($this->attributes['localisation_id']) && gettype($this->attributes['localisation_id']) === 'string') {
+            $this->attributes['localisation_id'] = model("LocalisationsModel")->find($this->attributes['localisation_id']);
+        }
+
+        return $this->attributes['localisation_id'];
+    }
+
+    public function getDocuments()
+    {
+        if (!isset($this->attributes['documents'])) {
+            $docIds = model("ConsultationDocumentsModel")->where('consultation_id', $this->attributes['id'])->findColumn('document_id');
+            $this->attributes['documents'] = $docIds ? model("DocumentsModel")->getMultiSimplified($docIds) : [];
+        }
+
+        return $this->attributes['documents'];
     }
 }

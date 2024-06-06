@@ -11,7 +11,7 @@ class LanguesModel extends Model
     protected $table            = 'langues';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
-    protected $insertID         = 0;
+    protected $insertID         = 1;
     protected $returnType       = LangueEntity::class;
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;

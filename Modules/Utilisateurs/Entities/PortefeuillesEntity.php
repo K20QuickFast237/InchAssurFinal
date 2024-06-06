@@ -18,4 +18,15 @@ class PortefeuillesEntity extends Entity
         'utilisateur_id' => "integer",
         'solde'          => "float",
     ];
+
+    public function debit(float $amount)
+    {
+        // Vérifier que le portefeuille couvre les frais
+        if ($this->attributes['solde'] > $amount) {
+            $this->attributes['solde'] = $this->attributes['solde'] - $amount;
+            model('PortefeuillesModel')->update($this->attributes['id'], ['solde' => $this->attributes['solde']]);
+        } else {
+            throw new \Exception("Solde du portefeuille insuffisant.", 1);
+        }
+    }
 }

@@ -133,7 +133,7 @@ class SouscriptionsEntity extends Entity
     /**
      * renvoie les services associés à cette souscription
      *
-     * @return object les données du service
+     * @return array les données du service
      */
     public function getServices()
     {
@@ -181,7 +181,7 @@ class SouscriptionsEntity extends Entity
         $service = array_filter($this->getServices(), fn ($serv) => $serv->id == $serviceId);
         $service = reset($service);
         if (!$service) {
-            throw new \Exception("Ce service n'est pas offert par cette souscription", 1);
+            throw new \Exception("Ce service n'est pas ou plus offert par cette souscription", 1);
         }
         $prixCouverture = $service->prix_couverture - $service->prix_couvert;
         $qtiteCouverture = $service->quantite - $service->quantite_utilise;

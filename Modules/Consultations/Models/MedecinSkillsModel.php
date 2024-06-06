@@ -10,7 +10,7 @@ class MedecinSkillsModel extends Model
     protected $table            = 'medecin_skills';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
-    protected $insertID         = 0;
+    protected $insertID         = 1;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;

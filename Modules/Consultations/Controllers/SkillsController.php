@@ -448,4 +448,52 @@ class SkillsController extends BaseController
         ];
         return $this->sendResponse($response, ResponseInterface::HTTP_NOT_MODIFIED);
     }
+
+    /**
+     * Renvoie la liste des medecins experts pour la compétence identifiée
+     *
+     * @param  int $skillID
+     * @return ResponseInterface The HTTP response.
+     */
+    public function getMedExperts(int $skillID)
+    {
+        $expertIds = model("MedecinSkillsModel")
+            ->where('skill_id', $skillID)
+            ->where('isExpert', true)
+            ->findColumn('medecin_id');
+        $experts = $expertIds ? model('UtilisateursModel')->getBulkSimplifiedArray($expertIds) : false;
+        $response = [
+            'statut'  => 'ok',
+            'message' => $experts ? count($experts) . ' medecin(s) trouvé(s).' : "Aucun medecin trouvé pour cette compétence.",
+            'data'    => $experts,
+        ];
+        return $this->sendResponse($response);
+    }
+
+    /**
+     * Renvoie la liste des medecins ayant la compétence identifiée
+     *
+     * @param  int $skillID
+     * @return ResponseInterface The HTTP response.
+     */
+    public function getMeds(int $skillID)
+    {
+        $medInfos = model("MedecinSkillsModel")->select('medecin_id, isExpert')
+            ->where('skill_id', $skillID)
+            ->findAll();
+
+        $medInfos = array_combine(array_column($medInfos, 'medecin_id'), array_column($medInfos, 'isExpert'));
+
+        $meds = $medInfos ? model('UtilisateursModel')->getBulkSimplifiedArray(array_keys($medInfos)) : false;
+        $meds = array_map(function ($med) use ($medInfos) {
+            $med['isExpert'] = (bool)$medInfos[$med['idUtilisateur']];
+            return $med;
+        }, $meds);
+        $response = [
+            'statut'  => 'ok',
+            'message' => $meds ? count($meds) . ' medecin(s) trouvé(s).' : "Aucun medecin trouvé pour cette compétence.",
+            'data'    => $meds,
+        ];
+        return $this->sendResponse($response);
+    }
 }
