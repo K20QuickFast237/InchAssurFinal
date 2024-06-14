@@ -109,7 +109,8 @@ class ConversationEntity extends Entity
                 $list[$msg->id] = $key;
             }
 
-            $this->attributes['messages'] = $messages;
+            // $this->attributes['messages'] = $messages;
+            $this->attributes['messages'] = array_values($messages);
         }
         return $this->attributes['messages'] ?? null;
     }

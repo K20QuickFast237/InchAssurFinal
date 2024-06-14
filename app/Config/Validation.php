@@ -88,15 +88,19 @@ class Validation
             'errors' => ['is_not_unique' => "la valeur de sexe n'est pas valide"],
         ],
         "tel1"            => [
-            'rules'  => 'required|numeric',
+            'rules'  => 'required|numeric|is_unique[utilisateurs.tel1]',
             'errors' => [
-                'required' => 'Numero de telephone principal requis',
-                'numeric'  => 'Le numero de telephone principal contient des caractères inapprovpriés',
+                'required'  => 'Numero de telephone principal requis',
+                'numeric'   => 'Le numero de telephone principal contient des caractères inapprovpriés',
+                'is_unique' => 'Le numero de telephone secondaire est déjà utilisé',
             ]
         ],
         "tel2"            => [
-            'rules'  => 'if_exist|numeric',
-            'errors' => ['numeric' => 'Le numero de telephone principal contient des caractères inapprovpriés',]
+            'rules'  => 'if_exist|numeric|is_unique[utilisateurs.tel1]',
+            'errors' => [
+                'numeric'   => 'Le numero de telephone principal contient des caractères inapprovpriés',
+                'is_unique' => 'Le numero de telephone secondaire est déjà utilisé',
+            ]
         ],
         "ville"           => [
             'rules'  => 'if_exist|string',

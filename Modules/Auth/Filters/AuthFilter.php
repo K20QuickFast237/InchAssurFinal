@@ -33,6 +33,8 @@ class AuthFilter implements FilterInterface
         // $utilisateur = model("UtilisateursModel")->where('user_id', $user->id)->first();
         //*
         $userData   = model("UtilisateursModel")->asArray()->where('user_id', $user->id)->first();
+        // print_r($userData);
+        // exit;
         $profilName = model("ProfilsModel")->where('id', $userData['profil_id'])->findColumn("titre")[0];
         $entityName = str_replace(" ", "", $profilName) . "sEntity";
         try {

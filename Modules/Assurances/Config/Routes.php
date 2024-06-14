@@ -43,7 +43,6 @@ $routes->resource('assurances', [
 ]);
 
 
-
 //------------- Questions --------------------
 $routes->group('questions', ['namespace' => 'Modules\Assurances\Controllers'], function ($routes) {
     $routes->get('tarifTypes', 'QuestionsController::getTarifTypes');

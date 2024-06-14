@@ -404,12 +404,13 @@ class ConversationsController extends BaseController
                 model("MessageImagesModel")->insert(["message_id" => $msgId, "image_id" => $imgID]);
                 $data['images'][] = ['idImage' => $imgID, 'url' => base_url($imgInfo['uri'])];
             }
-
+            $titles = [];
             foreach ($documents as $doc) {
                 // $title = str_replace(' ', '-', $doc->getClientName());
                 $title = $doc->getClientName();
                 $docInfo = getDocInfo($title, $doc, 'uploads/messages/documents/');
                 $docInfo['titre'] = $title;
+                $titles[] = $title;
                 $docID   = model('DocumentsModel')->insert($docInfo);
                 model("MessageDocumentsModel")->insert(["message_id" => $msgId, "document_id" => $docID]);
                 $data['documents'][] = ['idDocument' => $docID, 'url' => base_url($docInfo['uri']), 'titre' => $title];
@@ -427,9 +428,11 @@ class ConversationsController extends BaseController
         }
 
         $response = [
-            'statut' => 'ok',
+            'statut'  => 'ok',
             'message' => 'message envoyé',
-            'data'   => $data,
+            'data'    => $data,
+            'titles'  => $titles,
+            'documents' => $documents,
         ];
         return $this->sendResponse($response);
     }

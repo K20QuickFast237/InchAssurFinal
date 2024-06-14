@@ -28,8 +28,10 @@ $routes->group('paiements', ['namespace' => 'Modules\Paiements\Controllers'], st
     $routes->post('avis', 'PaiementsController::payForAvis');
     $routes->post('confirmConsult', 'PaiementsController::localSetConsultPayStatus');
     $routes->post('confirmAvis', 'PaiementsController::localSetAvisPayStatus');
+    $routes->post('confirmRecharge', 'PaiementsController::localSetRechargePayStatus');
     $routes->post('notfyConsult', 'PaiementsController::setConsultPayStatus');
     $routes->post('notfyAvis', 'PaiementsController::setAvisPayStatus');
+    $routes->post('notfyRecharge', 'PaiementsController::setRechargePayStatus');
 });
 
 /*--------------------- For transactions ----------------------------- */

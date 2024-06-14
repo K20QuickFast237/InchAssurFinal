@@ -99,13 +99,13 @@ class AuthGroups extends ShieldAuthGroups
      */
     public array $matrix = [
 
-        'administrateur' => ["pockets.*", "users.*", "assurances.*", "sinistres.*", "incidents.*", "conversations.*", "consultations.*", "agendas.*"],
+        'administrateur' => ["pockets.*", "users.*", "assurances.*", "medecins.*", "sinistres.*", "incidents.*", "conversations.*", "consultations.*", "agendas.*"],
         'entreprise'     => ["*"],
         'assureur'       => ["*"],
         'medecin'        => ["*"],
         'famille'        => ["*"],
         'particulier'    => ["pockets.*", "users.*", "assurances.*", "sinistres.Create", "sinistres.view", "incidents.Create", "incidents.view"],
-    ];/*
+    ]; /* medecins.addAssur, assurances.addMed  /*
         'superadmin' => [
             'admin.*',
             'users.*',

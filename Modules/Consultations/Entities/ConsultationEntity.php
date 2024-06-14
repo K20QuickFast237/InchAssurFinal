@@ -12,6 +12,7 @@ class ConsultationEntity extends Entity
     const DEFAULT_DUREE = 30;
     const ENATTENTE = 0, VALIDE = 1, EXPIREE = 2, // REFUSE = 2,
         ENCOURS = 3, TERMINE = 4, ANNULE = 5, TRANSMIS = 6, ECHOUE = 7;
+    const statuts = ["En Attente", "Validé", "Expiré", "En Cours", "Terminé", "Annulé", "Transmis", "Échoué"];
 
     protected $datamap = [
         'idConsultation' => 'id',

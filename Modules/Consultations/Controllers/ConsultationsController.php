@@ -131,8 +131,9 @@ class ConsultationsController extends BaseController
                 'rules'  => 'if_exist|valid_date[Y-m-d]',
                 'errors' => ['valid_date' => 'Format de date attendu YYYY-MM-DD.']
             ],
-            'objet' => 'if_exist',
-            'bilan' => 'if_exist',
+            'objet'      => 'if_exist',
+            'bilan'      => 'if_exist',
+            'statut'     => 'if_exist',
             "documents"  => 'if_exist|uploaded[documents]',
             "titres"     => [
                 'rules'  => 'required_with[documents]',
@@ -155,6 +156,7 @@ class ConsultationsController extends BaseController
             return $this->sendResponse($response, $errorsData['code']);
         }
         $input = $this->getRequestInput($this->request);
+        $documents = $this->request->getFiles() ?? null;
 
         $identifier = $this->getIdentifier($identifier);
         $consult = model('ConsultationsModel')->where($identifier['name'], $identifier['value'])->first();
@@ -210,20 +212,33 @@ class ConsultationsController extends BaseController
             model("AgendasModel")->where('id', $newAgenda->id)->set('slots', $newAgenda->slots)->update();
             model("AgendasModel")->where('id', $oldAgenda->id)->set('slots', $oldAgenda->slots)->update();
         }
+        if (isset($input['statut'])) {
+            $statut = array_search(ucwords($input['statut']), ConsultationEntity::statuts);
+
+            if (!($statut === null || $statut === false)) {
+                $input['statut'] = (int)$statut;
+            } else {
+                $message = "Le statut n'est pas valide.";
+                unset($input['statut']);
+            }
+        }
         // $cons = model("ConsultationsModel")->where($identifier['name'],  $identifier['value']);
         $cons = model("ConsultationsModel")->where('id', $consult->id);
+
         foreach ($input as $key => $value) {
             $cons->set($key, $value);
         }
-        $cons->update();
-        if (isset($input['documents'])) {
+        $input ? $cons->update() : null;
+        $titles = [];
+        // if (isset($input['documents'])) {
+        if ($documents) {
             if ($input['titres']) {
-                $files     = $this->request->getFiles();
-                $documents = $files["documents"] ?? [];
+                $input['titres'] = json_decode($input['titres']);
                 $cpt = 0;
                 foreach ($documents as $doc) {
                     $title = $input['titres'][$cpt] ?? $doc->getClientName();
-                    $docInfo = getDocInfo($title, $doc, 'uploads/messages/documents/');
+                    $titles[] = $title;
+                    $docInfo = getDocInfo($title, $doc, 'uploads/consultations/documents/');
                     $docInfo['titre'] = $title;
                     $docID   = model('DocumentsModel')->insert($docInfo);
 
@@ -243,7 +258,7 @@ class ConsultationsController extends BaseController
 
         $response = [
             'statut'  => 'ok',
-            'message' => 'Consultation mise à jour.',
+            'message' => $message ?? 'Consultation mise à jour.',
             'data'    => $data ?? [],
         ];
         return $this->sendResponse($response);
@@ -285,10 +300,10 @@ class ConsultationsController extends BaseController
                 'rules'  => 'required_with[documents]',
                 'errors' => ['required_with' => "Précisez les titres de documents."],
             ],
-            'withAssur' => [
-                'rules'  => 'required|permit_empty',
-                'errors' => ['required' => 'Vous devez préciser si avec assurance ou non.']
-            ],
+            // 'withAssur' => [
+            //     'rules'  => 'required|permit_empty',
+            //     'errors' => ['required' => 'Vous devez préciser si avec assurance ou non.']
+            // ],
             'idSouscription' => [
                 'rules'  => 'required_with[withAssur]|permit_empty|is_not_unique[souscriptions.id]',
                 'errors' => ['required' => 'Souscription requise pour consultation avec asssurance.']
@@ -363,7 +378,16 @@ class ConsultationsController extends BaseController
             ->first() ?? [];
 
         $identifier = $this->getIdentifier($identifier);
+        // print_r($identifier);
+        // exit;
         $consult = model("ConsultationsModel")->where($identifier['name'], $identifier['value'])->first();
+        if (!$consult) {
+            $response = [
+                'statut'  => 'no',
+                'message' => "Impossible d'identifier la consultation.",
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+        }
 
         // si paiement avec souscription
         if ($input['withAssur']) {
@@ -462,12 +486,14 @@ class ConsultationsController extends BaseController
         $ligneInfo['id'] = model("LignetransactionsModel")->insert($ligneInfo);
         $transactInfo['id'] = model("TransactionsModel")->insert($transactInfo);
         model("TransactionLignesModel")->insert(['transaction_id' => $transactInfo['id'], 'ligne_id' => $ligneInfo['id']]);
+
         if ($input['withAssur']) {
             $paiementInfo['transaction_id'] = $transactInfo['id'];
             model("PaiementsModel")->insert($paiementInfo);
         }
+
         // Enregistre les documents associés
-        if ($input['titres']) {
+        if (isset($input['titres'])) {
             $files     = $this->request->getFiles();
             $documents = $files["documents"] ?? [];
             $cpt = 0;

@@ -832,6 +832,55 @@ class UtilisateursController extends ResourceController
   }
 
   /**
+   * Ajoute un assureur à la liste des assureurs d'un medecin
+   * 
+   * @param  string|int medecinID (email | code | idUser)
+   * @param  string|int assureurID (email | code | idUser)
+   * @return \CodeIgniter\HTTP\ResponseInterfaced
+   */
+  public function addMedAssureur()
+  {
+    /* Action authorisée pour les assureurs, les medecins et les admins*/
+    if (!(auth()->user()->can('assurances.addMed') || auth()->user()->can('medecins.addAssur'))) {
+      $response = [
+        'statut'  => 'no',
+        'message' => 'Action non authorisée pour ce profil.',
+      ];
+      return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+    }
+
+    try {
+      $input = $this->getRequestInput($this->request);
+      $medecinID  = model('UtilisateursModel')->where('code', $input['medecinCoe'])->findColumn('id')[0];
+      $assureurID  = model('UtilisateursModel')->where('code', $input['assureurCode'])->findColumn('id')[0];
+
+      $assMedModel = model('AssureurMedecinsModel');
+
+      $exist = $assMedModel->where('assureur_id', $assureurID)
+        ->where('medecin_id', $medecinID)
+        ->first();
+      if (!$exist) {
+        $data['assureur_id'] = $assureurID;
+        $data['medecin_id'] = $medecinID;
+        $assMedModel->insert($data);
+      }
+
+      $response = [
+        'statut'  => 'ok',
+        'message' => 'Medecin et Assureur Associés.',
+      ];
+      return $this->sendResponse($response);
+    } catch (\Throwable $th) {
+      $response = [
+        'statut'  => 'no',
+        'message' => 'Erreur dans l\'association.',
+        'errors'  => $th->getMessage(),
+      ];
+      return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+    }
+  }
+
+  /**
    * Delete the designated resource object from the model
    *
    * @return mixed

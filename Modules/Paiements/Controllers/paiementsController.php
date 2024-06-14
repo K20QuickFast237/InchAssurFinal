@@ -307,7 +307,7 @@ class PaiementsController extends ResourceController
             5- Déclencher le background Job de gestion des paiement,
             6- On appelle monetBill,
             7- On retourne le résultat,
-            x- On initie le paiement,    // Ceci sera plustô fait après la réponse de l'API de paiement
+            x- On initie le paiement,    // Ceci sera plustôt fait après la réponse de l'API de paiement
         */
         $prixUnitaire  = model("AssurancesModel")->where('id', $input['idAssurance'])->findColumn("prix")[0];
         $payOption     = model("PaiementOptionsModel")->find($input['idPayOption']);
@@ -387,10 +387,11 @@ class PaiementsController extends ResourceController
         $paiementInfo['id'] = model("PaiementsModel")->insert($paiementInfo);
         model("TransactionsModel")->db->transCommit();
         // 4- Mise à jour de la souscription
-        /** Cette étape est déplacée dans la gestion de la réponse de l'API. */
+        /** Cette étape est déplacée dans la gestion de la réponse de l'API. Pour un mode de paiement non portefeuille */
+        // Moi meme 
 
         // 5- Déclencher le background job de gestion des paiements
-        /** Cette étape est déplacée dans la gestion de la réponse de l'API. */
+        /** Cette étape est déplacée dans la gestion de la réponse de l'API. Pour un mode de paiement non portefeuille */
 
         // 6- Appeler MonetBill
         $monetbil_args = array(
@@ -541,7 +542,7 @@ class PaiementsController extends ResourceController
                 $hasError = true;
                 throw new \Exception('');
             }
-            if ($input['operateur'] != 'PORTE_FEUILLE' && !$this->validate($rules)) {
+            if ($input['operateur'] != 'PORTE_FEUILLE' && !$this->validate($pay_rules)) {
                 $hasError = true;
                 throw new \Exception('');
             }
@@ -571,7 +572,7 @@ class PaiementsController extends ResourceController
         $paiementInfo = [
             'code'      => random_string('alnum', 10),
             'montant'   => $amount,
-            'statut'    => PaiementEntity::VALIDE,
+            'statut'    => PaiementEntity::EN_COURS, // ::VALIDE,
             'mode_id'   => model("PaiementModesModel")->where('operateur', $input['operateur'])->findColumn('id')[0] ?? 1,
             'auteur_id' => $this->request->utilisateur->id,
             'transaction_id' => $transaction->transaction_id,
@@ -635,6 +636,12 @@ class PaiementsController extends ResourceController
 
     /** @todo pourrait etre fait sans */
     public function setAvisPayStatus()
+    {
+        /* To be implemented*/
+    }
+
+    /** @todo pourrait etre fait sans */
+    public function setRechargePayStatus()
     {
         /* To be implemented*/
     }
@@ -803,6 +810,7 @@ class PaiementsController extends ResourceController
             model("TransactionsModel")->update($transaction->transaction_id, ['etat' => TransactionEntity::TERMINE]);
             // mettre à jour le statut de l'avis
             model('AvisExpertModel')->update($item_ref, ['status' => AvisExpertEntity::EN_COURS]);
+            // mettre à jour la souscription (les services disponibles)
         } elseif (Monetbil::STATUS_CANCELLED == $payment_status) {
             // mettre à jour le statut du paiement
             model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::ANNULE)->update();
@@ -816,6 +824,77 @@ class PaiementsController extends ResourceController
             // Payment failed!
             // mettre à jour le statut du paiement
             model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::ECHOUE)->update();
+            $message = "Echec du Paiement.";
+            $code = ResponseInterface::HTTP_BAD_REQUEST;
+        }
+        $response = [
+            'statut'  => 'ok',
+            'message' => $message,
+            'data'    => [],
+        ];
+        return $this->sendResponse($response, $code);
+    }
+
+    public function localSetRechargePayStatus()
+    {
+        $rules = [
+            'transaction_id' => 'required',
+            'item_ref'       => 'required',
+            'payment_ref'    => 'required',
+            'payment_status' => 'required',
+        ];
+
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception('');
+            }
+        } catch (\Throwable $th) {
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $response = [
+                'statut'  => 'no',
+                'message' => $errorsData['errors'],
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
+        $input = $this->getRequestInput($this->request);
+        $item_ref       = $input['item_ref'];
+        $payment_ref    = $input['payment_ref'];
+        $payment_status = $input['payment_status'];
+
+        // Mettre à jour le statut de la transaction
+        $transaction = model('TransactionsModel')->where('id', $item_ref)->first();
+        if (!$transaction) {
+            $response = [
+                'statut'  => 'no',
+                'message' => 'Transaction introuvable',
+                'data'    => [],
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+        }
+
+        if (Monetbil::STATUS_SUCCESS == $payment_status) {
+            // Successful payment!
+            // mettre à jour le statut du paiement
+            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::VALIDE)->update();
+            $message = "Paiement Réussi.";
+            $code = ResponseInterface::HTTP_OK;
+            // mettre à jour le statut de la transaction
+            model("TransactionsModel")->update($transaction->id, ['etat' => TransactionEntity::TERMINE]);
+        } elseif (Monetbil::STATUS_CANCELLED == $payment_status) {
+            // mettre à jour le statut du paiement
+            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::ANNULE)->update();
+            // mettre à jour le statut de la transaction
+            model("TransactionsModel")->update($transaction->id, ['etat' => TransactionEntity::EN_COURS]);
+            $message = "Paiement Annulé.";
+            $code = ResponseInterface::HTTP_BAD_REQUEST;
+        } else {
+            // Payment failed!
+            // mettre à jour le statut du paiement
+            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::ECHOUE)->update();
+            // mettre à jour le statut de la transaction
+            model("TransactionsModel")->update($transaction->id, ['etat' => TransactionEntity::EN_COURS]);
             $message = "Echec du Paiement.";
             $code = ResponseInterface::HTTP_BAD_REQUEST;
         }

@@ -77,7 +77,7 @@ class AvisExpertsController extends BaseController
     }
 
     /**
-     * Returne les détails de l'avis d'expert spécifié
+     * Retourne les détails de l'avis d'expert spécifié
      *
      * @param  int $id
      * @return ResponseInterface The HTTP response.

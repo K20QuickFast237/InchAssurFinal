@@ -81,6 +81,7 @@ class Auth extends BaseController
             $utilisateur->profil_id = $profil->id ?? ProfilsEntity::PARTICULIER_PROFIL_ID;
 
             $utilisateur->id = model("UtilisateursModel")->insert($utilisateur);
+
             // Add the profil to the user
             model("UtilisateurProfilsModel")->insert([
                 "utilisateur_id" => $utilisateur->id,
