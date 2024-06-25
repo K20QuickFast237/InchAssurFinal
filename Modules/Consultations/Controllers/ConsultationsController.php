@@ -105,6 +105,7 @@ class ConsultationsController extends BaseController
         }
         if ($consult->withExpertise) {
             $consult->expertise;
+            $consult->expertise ? $consult->expertise->documents : null;
         }
         $consult->documents;
         $response = [
@@ -390,7 +391,7 @@ class ConsultationsController extends BaseController
         }
 
         // si paiement avec souscription
-        if ($input['withAssur']) {
+        if (isset($input['withAssur']) && $input['withAssur']) {
             $souscriptID = (int)$input['idSouscription'];
             $consultationInfos['souscription_id'] = $souscriptID;
             // Vérifier que la souscription offre ce service
@@ -443,6 +444,7 @@ class ConsultationsController extends BaseController
             'medecin_receiver_id' => $input['idMedecin'],
             'consultation_id'     => $consult->id,
             'skill'               => $skill['nom'],
+            'cout'                => (float)$skill['cout_expert'],
             'description'         => $input['description'] ?? null,
             'statut'              => $prixCouvert > $skill['cout_expert'] ? AvisExpertEntity::EN_COURS : AvisExpertEntity::EN_ATTENTE,
         ];
@@ -487,7 +489,7 @@ class ConsultationsController extends BaseController
         $transactInfo['id'] = model("TransactionsModel")->insert($transactInfo);
         model("TransactionLignesModel")->insert(['transaction_id' => $transactInfo['id'], 'ligne_id' => $ligneInfo['id']]);
 
-        if ($input['withAssur']) {
+        if (isset($input['withAssur']) && $input['withAssur']) {
             $paiementInfo['transaction_id'] = $transactInfo['id'];
             model("PaiementsModel")->insert($paiementInfo);
         }

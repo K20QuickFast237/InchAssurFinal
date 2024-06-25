@@ -27,8 +27,8 @@ class ConsultationsModel extends Model
     protected $useTimestamps = true;  // autorise l'ajout automatique de la valeur à l'insertion
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'dateCreation';
-    protected $updatedField  = '';
-    // protected $updatedField  = 'dateModification';
+    protected $updatedField  = 'dateModification';
+    // protected $updatedField  = '';
     protected $deletedField  = '';
 
     // Validation

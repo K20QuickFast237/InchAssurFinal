@@ -830,6 +830,13 @@ class AgendasController extends BaseController
             ];
             return $this->sendResponse($response, $errorsData['code']);
         }
+        if (strtotime($input['debut']) < strtotime(now()) || strtotime($input['debut']) < strtotime($input['fin'])) {
+            $response = [
+                'statut'  => 'no',
+                'message' => "Date de debut incohérente. ",
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+        }
 
         $jour  = date('Y-m-d', strtotime((string)htmlspecialchars($input['debut'])));
         $fin   = date('H:i:s', strtotime((string)htmlspecialchars($input['fin'])));

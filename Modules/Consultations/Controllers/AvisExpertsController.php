@@ -40,7 +40,7 @@ class AvisExpertsController extends BaseController
         $avis = model("AvisExpertModel")
             ->where("medecin_sender_id", $utilisateur->id)
             ->orwhere("medecin_receiver_id", $utilisateur->id)
-            ->groupBy('medecin_sender_id', 'desc')
+            // ->groupBy('medecin_sender_id', 'desc')
             ->orderBy('dateCreation', 'desc')
             ->findAll();
 

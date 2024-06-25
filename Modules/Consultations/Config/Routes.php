@@ -125,6 +125,7 @@ $routes->get('allMotifs', '\Modules\Consultations\Controllers\MotifsController::
 $routes->group('motifs', ['namespace' => 'Modules\Consultations\Controllers'], static function ($routes) {
     $routes->post('(:num)', 'MotifsController::update/$1');
     $routes->post('(:num)', 'MotifsController::update/$1');
+    $routes->get('(:num)/medecins', 'MotifsController::getMeds/$1');
     $routes->get('medecin/(:segment)', 'MotifsController::index/$1');
     $routes->get('(:num)/skills', 'MotifsController::getSkills/$1');
 });

@@ -7,6 +7,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\API\ResponseTrait;
 use App\Traits\ControllerUtilsTrait;
 use App\Traits\ErrorsDataTrait;
+use CodeIgniter\Database\Exceptions\DataException;
 
 class MotifsController extends BaseController
 {
@@ -190,6 +191,79 @@ class MotifsController extends BaseController
             'statut' => 'ok',
             'message' => $data ? 'motif(s) trouvé(s).' : "Aucun motif trouvé pour $medName.",
             'data'   => $data,
+        ];
+        return $this->sendResponse($response);
+    }
+
+    /**
+     * Renvoie la liste des medecins pouvant consulter pour le motif identifié
+     *
+     * @param  int $motifId
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    public function getMeds(int $motifId)
+    {
+        /*
+            Récupérer tous les skills couvrant le motif
+            Récupérer les medecins ayant ce skills (préciser si expertise)
+            Récupérer les autres données nédessaires
+        */
+        try {
+            // récuperation des skills
+            $skillIds = model("SkillsMotifModel")->where("motif_id", $motifId)->findColumn("skill_id");
+            $skills = model("SkillsModel")->join("medecin_skills", "skills.id = skill_id", "right")
+                ->whereIn("skills.id", $skillIds)
+                ->findAll();
+
+            $medIds = array_column($skills, "medecin_id");
+
+            // récupérer les localisations et canaux pour ces medecins
+            $locations = model("LocalisationsModel")->join("medecin_localisations", "localisations.id = localisation_id", "left")
+                ->select("etablissement, adresse, ville, medecin_id, isDefault, localisation_id")
+                ->whereIn("medecin_id", $medIds)
+                ->asArray()
+                ->findAll();
+            $canaux = model("CanauxModel")->join("medecin_canaux", "canaux.id = canal_id", "left")
+                ->whereIn("medecin_id", $medIds)
+                ->asArray()
+                ->findAll();
+
+            // récupérer les identités des médecins
+            $meds = $medIds ? model('UtilisateursModel')->getBulkSimplifiedArray($medIds) : false;
+        } catch (\Throwable $th) {
+            $response = [
+                'statut'  => 'ok',
+                'message' => "Aucun medecin trouvé.",
+            ];
+            return $this->sendResponse($response);
+        }
+        // rassembler les informations et répondre
+        for ($i = 0; $i < count($meds); $i++) {
+            $sks = array_values(array_filter($skills, fn ($s) => $s["medecin_id"] == $meds[$i]['idUtilisateur']));
+            $meds[$i]['skills'] = array_map(fn ($sk) => [
+                "idSkill" => $sk["id"],
+                "nom" => $sk["nom"],
+                "description" => $sk["description_perso"] ? $sk["description_perso"] : $sk["description"],
+                "cout" => $sk["cout"],
+                "isExpert" => (bool)$sk["isExpert"],
+                "cout_expert" => $sk["isExpert"] ? $sk["cout_expert"] : null,
+            ], $sks);
+            $locats = array_values(array_filter($locations, fn ($l) => $l["medecin_id"] == $meds[$i]['idUtilisateur']));
+            $meds[$i]['localisation'] = array_map(fn ($loc) =>
+            [
+                "idLocalisation" => $loc['localisation_id'],
+                "etablissement"  => $loc['etablissement'],
+                "adresse"        => $loc['adresse'],
+                "ville"          => $loc['ville'],
+                "isDefault"      => (bool)$loc['isDefault'],
+            ], $locats);
+            $cans = array_values(array_filter($canaux, fn ($c) => $c["medecin_id"] == $meds[$i]['idUtilisateur']));
+            $meds[$i]['canaux'] = array_map(fn ($can) => ["idCanal" => $can['id'], "nom" => $can['nom']], $cans);
+        }
+        $response = [
+            'statut'  => 'ok',
+            'message' => $meds ? count($meds) . ' medecin(s) trouvé(s).' : "Aucun medecin trouvé pour ce motif.",
+            'data'    => $meds,
         ];
         return $this->sendResponse($response);
     }

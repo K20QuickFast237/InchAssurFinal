@@ -29,6 +29,7 @@ class ConsultationEntity extends Entity
         'withExpertise'  => "?boolean",
         'isSecondAdvice' => "?boolean",
         'isAssured'      => "?boolean",
+        'isExpertise'    => "?boolean",
         'statut'         => "etatcaster[En Attente,Validé,Expiré,En Cours,Terminé,Annulé,Transmis,Échoué]",
     ];
 
@@ -61,6 +62,7 @@ class ConsultationEntity extends Entity
     {
         if (!isset($this->attributes['expertise'])) {
             $this->attributes['expertise'] = model("AvisExpertModel")->where('consultation_id', $this->attributes['id'])->first();
+            $this->attributes['withExpertise'] = (bool)$this->attributes['expertise'];
         }
 
         return $this->attributes['expertise'];

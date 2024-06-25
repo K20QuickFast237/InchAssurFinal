@@ -7,6 +7,7 @@ use CodeIgniter\Entity\Entity;
 class AvisExpertEntity extends Entity
 {
     const EN_ATTENTE = 0, TERMINE = 1, EN_COURS = 2, ANNULE = 3;
+    const FAVORABLE_POSITIF = 1, FAVORABLE_NEGATIF = 0, FAVORABLE_NON_SPECIFIE = 2;
 
     protected $datamap = [
         'idAvisExpert' => 'id',
@@ -19,6 +20,8 @@ class AvisExpertEntity extends Entity
     protected $casts = [
         'id'              => "integer",
         'consultation_id' => "integer",
+        'cout'            => "loat",
+        'isFavorable'     => "etatcaster[Avis Non Favorable,Avis Favorable,Non Spécifié]",
         'statut'          => "etatcaster[En Attente,Terminé,En Cours, Annulé]",
     ];
 
@@ -49,7 +52,7 @@ class AvisExpertEntity extends Entity
     {
         if (!isset($this->attributes['documents'])) {
             $docIds = model("AvisDocumentsModel")->where('avis_id', $this->attributes['id'])->findColumn('document_id');
-            $this->attributes['documents'] = model("DocumentsModel")->getMultiSimplified($docIds);
+            $this->attributes['documents'] = $docIds ? model("DocumentsModel")->getMultiSimplified($docIds) : [];
         }
 
         return $this->attributes['documents'];
@@ -59,7 +62,7 @@ class AvisExpertEntity extends Entity
     {
         if (!isset($this->attributes['attachements'])) {
             $docIds = model("AvisAttachementsModel")->where('avis_id', $this->attributes['id'])->findColumn('document_id');
-            $this->attributes['attachements'] = model("DocumentsModel")->getMultiSimplified($docIds);
+            $this->attributes['attachements'] = $docIds ? model("DocumentsModel")->getMultiSimplified($docIds) : [];
         }
 
         return $this->attributes['attachements'];

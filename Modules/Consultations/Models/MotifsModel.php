@@ -3,6 +3,7 @@
 namespace Modules\Consultations\Models;
 
 use CodeIgniter\Model;
+use Modules\Consultations\Entities\MotifEntity;
 
 class MotifsModel extends Model
 {
@@ -11,7 +12,7 @@ class MotifsModel extends Model
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $insertID         = 1;
-    protected $returnType       = 'array';
+    protected $returnType       = MotifEntity::class;
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = ['nom', 'description'];

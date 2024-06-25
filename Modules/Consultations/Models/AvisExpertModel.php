@@ -15,7 +15,7 @@ class AvisExpertModel extends Model
     protected $returnType       = AvisExpertEntity::class;
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['medecin_sender_id', 'medecin_receiver_id', 'consultation_id', 'skill', 'bilan', 'description', 'statut', 'isFavorable'];
+    protected $allowedFields    = ['medecin_sender_id', 'medecin_receiver_id', 'consultation_id', 'skill', 'bilan', 'description', 'cout', 'statut', 'isFavorable'];
 
     // Dates
     protected $useTimestamps = true;
