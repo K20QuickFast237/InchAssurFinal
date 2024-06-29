@@ -26,8 +26,8 @@ $routes->group('paiements', ['namespace' => 'Modules\Paiements\Controllers'], st
     $routes->post('notify', 'PaiementsController::setPayStatus');
     $routes->post('statut', 'PaiementsController::localSetPayStatus');
     $routes->post('avis', 'PaiementsController::payForAvis');
-    $routes->post('consult', 'PaiementsController::payForConsult');
-    $routes->post('confirmConsult', 'PaiementsController::localSetConsultPayStatus');
+    $routes->post('consultation', 'PaiementsController::payForConsult');
+    $routes->post('confirmConsultation', 'PaiementsController::localSetConsultPayStatus');
     $routes->post('confirmAvis', 'PaiementsController::localSetAvisPayStatus');
     $routes->post('confirmRecharge', 'PaiementsController::localSetRechargePayStatus');
     $routes->post('notfyConsult', 'PaiementsController::setConsultPayStatus');

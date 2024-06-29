@@ -258,7 +258,7 @@ class MotifsController extends BaseController
                 "isDefault"      => (bool)$loc['isDefault'],
             ], $locats);
             $cans = array_values(array_filter($canaux, fn ($c) => $c["medecin_id"] == $meds[$i]['idUtilisateur']));
-            $meds[$i]['canaux'] = array_map(fn ($can) => ["idCanal" => $can['id'], "nom" => $can['nom']], $cans);
+            $meds[$i]['canaux'] = array_map(fn ($can) => ["idCanal" => (int)$can['canal_id'], "nom" => $can['nom']], $cans);
         }
         $response = [
             'statut'  => 'ok',

@@ -4,6 +4,7 @@ namespace Modules\Consultations\Entities;
 
 use App\Traits\EtatsListTrait;
 use CodeIgniter\Entity\Entity;
+use Modules\Paiements\Entities\TransactionEntity;
 
 class ConsultationEntity extends Entity
 {
@@ -85,5 +86,27 @@ class ConsultationEntity extends Entity
         }
 
         return $this->attributes['documents'];
+    }
+
+    public function getTransaction()
+    {
+        if (!isset($this->attributes['transaction'])) {
+            $transaction = model('TransactionsModel')
+                ->join('transaction_lignes', 'transactions.id=transaction_id', 'left')
+                ->join('lignetransactions',  'ligne_id=lignetransactions.id', 'left')
+                ->select('transactions.id as idTransaction, transactions.code, net_a_payer, reste_a_payer, transactions.etat')
+                ->where('produit_group_name', 'Consultation')
+                ->where('produit_id', $this->attributes['id'])
+                ->asArray()->first();
+            if ($transaction) {
+                $transaction["idTransaction"] = (int)$transaction["idTransaction"];
+                $transaction["net_a_payer"] = (float)$transaction["net_a_payer"];
+                $transaction["reste_a_payer"] = (float)$transaction["reste_a_payer"];
+                $transaction["etat"] = TransactionEntity::$etats[(int)$transaction["etat"]];
+            }
+            $this->attributes['transaction'] = $transaction;
+        }
+
+        return $this->attributes['transaction'];
     }
 }

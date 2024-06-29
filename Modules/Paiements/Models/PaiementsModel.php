@@ -13,7 +13,7 @@ class PaiementsModel extends Model
     protected $returnType       = PaiementEntity::class;
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ["code", "montant", "statut", "mode_id", "auteur_id"];
+    protected $allowedFields    = ["code", "montant", "statut", "mode_id", "transaction_id", "auteur_id"];
 
 
     // Dates

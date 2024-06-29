@@ -1107,6 +1107,19 @@ class AssurancesController extends ResourceController
         ];
         return $this->sendResponse($response);
     }
+    public function allAssursOfMkp()
+    {
+        $assuranceIDs = model('AssuranceMkpCategoriesModel')->findColumn('assurance_id');
+        // print_r($assuranceIDs);
+        // exit;
+        $assurances   = $assuranceIDs ? model('AssurancesModel')->whereIn('id', $assuranceIDs)->findAll() : [];
+        $response = [
+            'statut' => 'ok',
+            'message' => $assurances ? 'Assurances de cette sous-catégorie.' : "Aucune assurance pour cette sous-catégorie.",
+            'data' => $assurances,
+        ];
+        return $this->sendResponse($response);
+    }
 
     public function getAssurTypes()
     {

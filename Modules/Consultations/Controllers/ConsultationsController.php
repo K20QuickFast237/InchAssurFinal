@@ -108,6 +108,7 @@ class ConsultationsController extends BaseController
             $consult->expertise ? $consult->expertise->documents : null;
         }
         $consult->documents;
+        $consult->transaction;
         $response = [
             'statut'  => 'ok',
             'message' => 'Détails de la consultation.',

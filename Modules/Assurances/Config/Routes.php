@@ -21,6 +21,7 @@ $routes->group('assurances', ['namespace' => 'Modules\Assurances\Controllers'], 
     $routes->get("types",                       "AssurancesController::getAssurTypes/$1");
     $routes->get("categorie/(:num)",            "AssurancesController::getAssursOfCategory/$1");
     $routes->get("sous-categorie/(:num)",       "AssurancesController::getAssursOfSubCategory/$1");
+    $routes->get("marketPlace",                 "AssurancesController::allAssursOfMkp");
     $routes->get("(:segment)/piecesAJoindre",   "AssurancesController::getAssurPieceAjoindres/$1");
     $routes->get("(:segment)/documentation",    "AssurancesController::getAssurDocumentation/$1");
     $routes->get("(:segment)/questionnaire",    "AssurancesController::getAssurQuestionnaire/$1");

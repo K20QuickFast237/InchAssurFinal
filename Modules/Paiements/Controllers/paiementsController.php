@@ -516,6 +516,10 @@ class PaiementsController extends ResourceController
                 'rules'  => 'required|is_not_unique[paiement_modes.operateur]',
                 'errors' => ['required' => 'Opérateur non défini.', 'is_not_unique' => 'Opérateur invalide'],
             ],
+            'idAvis' => [
+                'rules'  => 'required|is_not_unique[avisexpert.id]',
+                'errors' => ['required' => 'Identification d\'avis incorrect.', 'is_not_unique' => 'Identification d\'avis incorrect.'],
+            ],
         ];
         $pay_rules = [
             'operateur'  => [
@@ -557,6 +561,7 @@ class PaiementsController extends ResourceController
                 'statut'  => 'no',
                 'message' => $validationError ? $errorsData['errors'] : "Impossible d'envoyer cette demande.",
                 'errors'  => $errorsData['errors'],
+                'data'  => $input,
             ];
             return $this->sendResponse($response, $errorsData['code']);
         }
@@ -570,7 +575,8 @@ class PaiementsController extends ResourceController
             ->where('produit_group_name', 'Avis Expert')
             ->where('produit_id', $avis->id)
             ->first();
-
+        // print_r($transaction);
+        // exit;
         $amount = (float)$transaction->prix_total_net;
         // Déterminer le moyen de paiement
         $paiementInfo = [
@@ -597,7 +603,12 @@ class PaiementsController extends ResourceController
             }
 
             // Modifier les status
-            model('TransactionsModel')->update($transaction->transaction_id, ['status' => TransactionEntity::TERMINE]);
+            // model('TransactionsModel')->update($transaction->transaction_id, ['etat' => TransactionEntity::TERMINE]);
+            model("TransactionsModel")->update($transaction->transaction_id, [
+                "avance" => (float)$transaction->avance + $amount,
+                "reste_a_payer" => (float)$transaction->reste_a_payer - $amount,
+                'etat' => TransactionEntity::TERMINE,
+            ]);
             model('AvisExpertModel')->update($avis->id, ['status' => AvisExpertEntity::EN_COURS]);
             $paiementInfo['statut'] = PaiementEntity::VALIDE;
             $message = "Paiement réussi.";
@@ -642,7 +653,7 @@ class PaiementsController extends ResourceController
                 'rules'  => 'required|is_not_unique[paiement_modes.operateur]',
                 'errors' => ['required' => 'Opérateur non défini.', 'is_not_unique' => 'Opérateur invalide'],
             ],
-            'idConsult ' => [
+            'idConsultation ' => [
                 'rules'  => 'required|is_not_unique[consultations.id]',
                 'errors' => ['required' => 'Identification de consultation incorrect.', 'is_not_unique' => 'Identification de consultation incorrect.'],
             ],
@@ -652,6 +663,10 @@ class PaiementsController extends ResourceController
                 'rules'  => 'required|is_not_unique[paiement_modes.operateur]',
                 'errors' => ['required' => 'Opérateur non défini.', 'is_not_unique' => 'Opérateur invalide'],
             ],
+            'montant'  => [
+                'rules'  => 'required|numeric',
+                'errors' => ['required' => 'Montant non défini.', 'numeric' => 'Montant invalide'],
+            ],
             'telephone'  => [
                 'rules'  => 'required|numeric',
                 'errors' => ['required' => 'Numéro de téléphone requis pour ce mode de paiement.', 'numeric' => 'Numéro de téléphone invalide.']
@@ -660,7 +675,7 @@ class PaiementsController extends ResourceController
                 'rules'  => 'required|valid_url',
                 'errors' => ['required' => 'L\'URL de retour doit être spécifiée pour ce mode de paiement.', 'valid_url' => 'URL de retour non conforme.']
             ],
-            'idConsult ' => [
+            'idConsultation ' => [
                 'rules'  => 'required|is_not_unique[consultations.id]',
                 'errors' => ['required' => 'Identification de consultation incorrect.', 'is_not_unique' => 'Identification de consultation incorrect.'],
             ],
@@ -689,7 +704,7 @@ class PaiementsController extends ResourceController
 
 
         // Récupérer les éléments de transaction
-        $consult = model('ConsultationsModel')->find($input['idConsult']);
+        $consult = model('ConsultationsModel')->find($input['idConsultation']);
         $transaction = model('TransactionsModel')
             ->join('transaction_lignes', 'transactions.id=transaction_id', 'left')
             ->join('lignetransactions',  'ligne_id=lignetransactions.id', 'left')
@@ -698,14 +713,21 @@ class PaiementsController extends ResourceController
             ->first();
 
         $amount = (float)$transaction->reste_a_payer;
+        if ($amount != $input['montant']) {
+            $response = [
+                'statut'  => 'no',
+                'message' => "Le montant de l'opération est incorrect.",
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+        }
         // Déterminer le moyen de paiement
         $paiementInfo = [
             'code'      => random_string('alnum', 10),
             'montant'   => $amount,
             'statut'    => PaiementEntity::EN_COURS, // ::VALIDE,
-            'mode_id'   => model("PaiementModesModel")->where('operateur', $input['operateur'])->findColumn('id')[0] ?? 1,
+            'mode_id'   => (int)model("PaiementModesModel")->where('operateur', $input['operateur'])->findColumn('id')[0] ?? 1,
             'auteur_id' => $this->request->utilisateur->id,
-            'transaction_id' => $transaction->transaction_id,
+            'transaction_id' => (int)$transaction->transaction_id,
         ];
         model("PaiementsModel")->db->transBegin();
         if ($input['operateur'] == 'PORTE_FEUILLE') {
@@ -723,8 +745,13 @@ class PaiementsController extends ResourceController
             }
 
             // Modifier les status
-            model('TransactionsModel')->update($transaction->transaction_id, ['status' => TransactionEntity::TERMINE]);
-            model('ConsultationsModel')->update($consult->id, ['status' => ConsultationEntity::VALIDE]);
+            // model('TransactionsModel')->update($transaction->transaction_id, ['etat' => TransactionEntity::TERMINE]);
+            model("TransactionsModel")->update($transaction->transaction_id, [
+                "avance" => (float)$transaction->avance + $amount,
+                "reste_a_payer" => (float)$transaction->reste_a_payer - $amount,
+                'etat' => TransactionEntity::TERMINE,
+            ]);
+            model('ConsultationsModel')->update($consult->id, ['statut' => ConsultationEntity::VALIDE]);
             $paiementInfo['statut'] = PaiementEntity::VALIDE;
             $message = "Paiement réussi.";
         } else {
@@ -748,7 +775,7 @@ class PaiementsController extends ResourceController
             $message = "Paiement Initié.";
         }
         // Ajouter le paiement car le statut peut passer à annulé
-        model("PaiementsModel")->insert($paiementInfo);
+        $paiementInfo['id'] = model("PaiementsModel")->insert($paiementInfo);
         model("PaiementsModel")->db->transCommit();
         $response = [
             'statut'  => 'ok',
@@ -803,6 +830,7 @@ class PaiementsController extends ResourceController
         $item_ref       = $input['item_ref'];
         $payment_ref    = $input['payment_ref'];
         $payment_status = $input['payment_status'];
+        $api_transact_id = $input['transaction_id'];
         /*
             mettre à jour le statut du paiement
             mettre à jour l'agenda du médecin (en cas de validation)
@@ -810,12 +838,18 @@ class PaiementsController extends ResourceController
             mettre à jour le statut de la transaction
         */
         // Mettre à jour le statut de la transaction
-        $ligneTransact = model("LignetransactionsModel")->where('produit_id', $consultation->id)->where('produit_group_name', 'Consultation')->first();
-        $idLigneTransact = $ligneTransact->id;
-        unset($ligneTransact);
-        $transactInfo = model("TransactionsModel")->join("transaction_lignes", "transaction_id=transactions.id")
-            ->select('transactions.*')
-            ->where("ligne_id", $idLigneTransact)
+        // $ligneTransact = model("LignetransactionsModel")->where('produit_id', $consultation->id)->where('produit_group_name', 'Consultation')->first();
+        // $idLigneTransact = $ligneTransact->id;
+        // unset($ligneTransact);
+        // $transactInfo = model("TransactionsModel")->join("transaction_lignes", "transaction_id=transactions.id")
+        //     ->select('transactions.*')
+        //     ->where("ligne_id", $idLigneTransact)
+        //     ->first();
+        $transactInfo = model('TransactionsModel')
+            ->join('transaction_lignes', 'transactions.id=transaction_id', 'left')
+            ->join('lignetransactions',  'ligne_id=lignetransactions.id', 'left')
+            ->where('produit_group_name', 'Consultation')
+            ->where('produit_id', $item_ref)
             ->first();
         if (!$transactInfo) {
             $response = [
@@ -829,15 +863,20 @@ class PaiementsController extends ResourceController
         if (Monetbil::STATUS_SUCCESS == $payment_status) {
             // Successful payment!
             // mettre à jour le statut du paiement
-            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::VALIDE)->update();
+            $payedAmount = model("PaiementsModel")->where("code", $payment_ref)->findColumn("montant")[0];
+            model("PaiementsModel")->where("code", $payment_ref)->set('code', $api_transact_id)->set('statut', PaiementEntity::VALIDE)->update();
             $message = "Paiement Réussi.";
             $code = ResponseInterface::HTTP_OK;
             // mettre à jour le statut de la transaction
             if ($transactInfo->reste_a_payer <= 0) {
-                model("TransactionsModel")->update($transactInfo->id, ['etat' => TransactionEntity::TERMINE]);
+                model("TransactionsModel")->update($transactInfo->id, [
+                    "avance" => (float)$transactInfo->avance + (float)$payedAmount,
+                    "reste_a_payer" => (float)$transactInfo->reste_a_payer - (float)$payedAmount,
+                    'etat' => TransactionEntity::TERMINE,
+                ]);
                 // mettre à jour le statut de la consultation
                 $consultation = model("ConsultationsModel")->where("code", $item_ref)->first();
-                model("ConsultationsModel")->where("id", $$consultation->id)->set('statut', ConsultationEntity::VALIDE)->update();
+                model("ConsultationsModel")->where("id", $consultation->id)->set('statut', ConsultationEntity::VALIDE)->update();
                 // mettre à jour l'agenda du médecin
                 $heure = $consultation->heure;
                 $agenda = model("AgendasModel")->where('proprietaire_id', $consultation->medecin_user_id)
@@ -855,7 +894,9 @@ class PaiementsController extends ResourceController
             }
         } elseif (Monetbil::STATUS_CANCELLED == $payment_status) {
             // mettre à jour le statut du paiement
-            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::ANNULE)->update();
+            // model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::ANNULE)->update();
+            model("PaiementsModel")->where("code", $payment_ref)->set('code', $api_transact_id)->set('statut', PaiementEntity::ANNULE)->update();
+
             // mettre à jour le statut de la transaction
             // model("TransactionsModel")->update($transactInfo->id, ['etat' => TransactionEntity::TERMINE]);
             // mettre à jour le statut de la consultation
@@ -865,7 +906,9 @@ class PaiementsController extends ResourceController
         } else {
             // Payment failed!
             // mettre à jour le statut du paiement
-            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::ECHOUE)->update();
+            // model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::ECHOUE)->update();
+            model("PaiementsModel")->where("code", $payment_ref)->set('code', $api_transact_id)->set('statut', PaiementEntity::ECHOUE)->update();
+
             // mettre à jour le statut de la transaction
             // model("TransactionsModel")->update($transactInfo->id, ['etat' => TransactionEntity::TERMINE]);
             // mettre à jour le statut de la consultation
@@ -908,6 +951,7 @@ class PaiementsController extends ResourceController
         $item_ref       = $input['item_ref'];
         $payment_ref    = $input['payment_ref'];
         $payment_status = $input['payment_status'];
+        $api_transact_id = $input['transaction_id'];
         /*
             mettre à jour le statut du paiement
             mettre à jour l'agenda du médecin (en cas de validation)
@@ -933,11 +977,18 @@ class PaiementsController extends ResourceController
         if (Monetbil::STATUS_SUCCESS == $payment_status) {
             // Successful payment!
             // mettre à jour le statut du paiement
-            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::VALIDE)->update();
+            $payedAmount = model("PaiementsModel")->where("code", $payment_ref)->findColumn("montant")[0];
+            model("PaiementsModel")->where("code", $payment_ref)->set('code', $api_transact_id)->set('statut', PaiementEntity::VALIDE)->update();
+
             $message = "Paiement Réussi.";
             $code = ResponseInterface::HTTP_OK;
             // mettre à jour le statut de la transaction
-            model("TransactionsModel")->update($transaction->transaction_id, ['etat' => TransactionEntity::TERMINE]);
+            // model("TransactionsModel")->update($transaction->transaction_id, ['etat' => TransactionEntity::TERMINE]);
+            model("TransactionsModel")->update($transaction->transaction_id, [
+                "avance" => (float)$transaction->avance + (float)$payedAmount,
+                "reste_a_payer" => (float)$transaction->reste_a_payer - (float)$payedAmount,
+                'etat' => TransactionEntity::TERMINE,
+            ]);
             // mettre à jour le statut de l'avis
             model('AvisExpertModel')->update($item_ref, ['status' => AvisExpertEntity::EN_COURS]);
             // mettre à jour la souscription (les services disponibles)
@@ -992,6 +1043,7 @@ class PaiementsController extends ResourceController
         $item_ref       = $input['item_ref'];
         $payment_ref    = $input['payment_ref'];
         $payment_status = $input['payment_status'];
+        $api_transact_id = $input['transaction_id'];
 
         // Mettre à jour le statut de la transaction
         $transaction = model('TransactionsModel')->where('id', $item_ref)->first();
@@ -1007,7 +1059,8 @@ class PaiementsController extends ResourceController
         if (Monetbil::STATUS_SUCCESS == $payment_status) {
             // Successful payment!
             // mettre à jour le statut du paiement
-            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::VALIDE)->update();
+            // model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::VALIDE)->update();
+            model("PaiementsModel")->where("code", $payment_ref)->set('code', $api_transact_id)->set('statut', PaiementEntity::VALIDE)->update();
             $message = "Paiement Réussi.";
             $code = ResponseInterface::HTTP_OK;
             // mettre à jour le statut de la transaction
@@ -1091,7 +1144,7 @@ class PaiementsController extends ResourceController
         }
         if (Monetbil::STATUS_SUCCESS == $payment_status) {
             // Successful payment!
-            model("PaiementsModel")->where("code", $payment_ref)->set('statut', PaiementEntity::VALIDE)->update();
+            model("PaiementsModel")->where("code", $payment_ref)->set('code', $transaction_id)->set('statut', PaiementEntity::VALIDE)->update();
             $message = "Paiement Réussi.";
             $code = ResponseInterface::HTTP_OK;
             if ($transactInfo->reste_a_payer <= 0) {
