@@ -140,6 +140,7 @@ class SouscriptionsEntity extends Entity
         if (!isset($this->attributes['services'])) {
             $this->attributes['services'] = model('SouscriptionServicesModel')->join('services', 'services.id = souscription_services.service_id')
                 ->where('souscription_id', $this->attributes['id'])
+                ->where('etat', SouscriptionServiceEntity::ACTIF)
                 ->findAll();
         }
 

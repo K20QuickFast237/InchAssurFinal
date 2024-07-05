@@ -87,6 +87,16 @@ class ConsultationEntity extends Entity
 
         return $this->attributes['documents'];
     }
+    public function getPrevious()
+    {
+        if (!isset($this->attributes['previous'])) {
+            $previous = model("ConsultationsModel")->find($this->attributes['previous_id']);
+            $previous->documents;
+            $this->attributes['previous'] = $previous;
+        }
+
+        return $this->attributes['previous'];
+    }
 
     public function getTransaction()
     {

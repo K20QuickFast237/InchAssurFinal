@@ -11,6 +11,7 @@ use Modules\Assurances\Entities\QuestionAnswersEntity;
 use Modules\Assurances\Entities\QuestionsEntity;
 use Modules\Assurances\Entities\SouscriptionsEntity;
 use CodeIgniter\Database\Exceptions\DataException;
+use Modules\Assurances\Entities\SouscriptionServiceEntity;
 
 class SouscriptionsController extends ResourceController
 {
@@ -39,6 +40,38 @@ class SouscriptionsController extends ResourceController
             ->where("etat", SouscriptionsEntity::ACTIF)
             ->orderBy("dateDebutValidite", "DESC")
             ->findAll();
+
+        if ($subscriptions) {
+            $souscriptionIds = array_map(fn ($s) => $s->idSouscription, $subscriptions);
+            $services = model('SouscriptionServicesModel')->join('services', 'services.id = souscription_services.service_id')
+                ->whereIn('souscription_id', $souscriptionIds)
+                ->where('etat', SouscriptionServiceEntity::ACTIF)
+                ->findAll();
+
+            // Association
+            $sous_serv = [];
+            foreach ($services as $service) {
+                $sousId = $service->souscription_id;
+                $index = array_search($sousId, $souscriptionIds);
+                $sous_serv[$sousId] = $sous_serv[$sousId] ?? [];
+                $sous_serv[$sousId][] = [
+                    "idService" => $service->service_id,
+                    "etat" => $service->etat ? "Actif" : "Inactif",
+                    "quantite_utilise" => $service->quantite_utilise,
+                    "prix_couvert" => $service->prix_couvert,
+                    "nom" => $service->nom,
+                    "description" => $service->description,
+                    "taux_couverture" => $service->taux_couverture,
+                    "prix_couverture" => $service->prix_couverture,
+                    "quantite" => (int)$service->quantite,
+                ];
+            }
+            // Formatage
+            $subscriptions = array_map(function ($s) use ($sous_serv) {
+                $s->services = $sous_serv[$s->idSouscription] ?? [];
+                return $s;
+            }, $subscriptions);
+        }
         $response = [
             'statut' => 'ok',
             'message' => count($subscriptions) ? 'Souscriptions trouvées.' : 'Aucune souscription trouvée.',

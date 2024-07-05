@@ -7,6 +7,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\API\ResponseTrait;
 use App\Traits\ControllerUtilsTrait;
 use App\Traits\ErrorsDataTrait;
+use DateTime;
 use Modules\Agendas\Entities\AgendaEntity;
 use Modules\Consultations\Entities\ConsultationEntity;
 
@@ -717,6 +718,7 @@ class AgendasController extends BaseController
         $agenda = model("AgendasModel")
             ->where("proprietaire_id", $utilisateur->id)
             ->where("statut", AgendaEntity::AVAILABLE)
+            ->where("jour_dispo >", date("Y-m-d"))
             ->orderBy('dateCreation', 'desc')
             ->findAll();
 
@@ -830,7 +832,8 @@ class AgendasController extends BaseController
             ];
             return $this->sendResponse($response, $errorsData['code']);
         }
-        if (strtotime($input['debut']) < strtotime(now()) || strtotime($input['debut']) < strtotime($input['fin'])) {
+
+        if (strtotime($input['debut']) < strtotime(date('Y-m-d H:i:s')) || strtotime($input['fin']) < strtotime($input['debut'])) {
             $response = [
                 'statut'  => 'no',
                 'message' => "Date de debut incohérente. ",
@@ -841,7 +844,7 @@ class AgendasController extends BaseController
         $jour  = date('Y-m-d', strtotime((string)htmlspecialchars($input['debut'])));
         $fin   = date('H:i:s', strtotime((string)htmlspecialchars($input['fin'])));
         $debut = date('H:i:s', strtotime((string)htmlspecialchars($input['debut'])));
-        $duree = $input['duree'] ?? null;
+        $duree = $input['duree'] ?? ConsultationEntity::DEFAULT_DUREE;
 
         //* On evite les chevauchements
         $agendaModel = model("AgendasModel");
@@ -871,6 +874,7 @@ class AgendasController extends BaseController
         //*/
         $agendaInfos = [
             'jour_dispo'          => $jour,
+            'duree'               => $duree,
             'heure_dispo_debut'   => $debut,
             'heure_dispo_fin'     => $fin,
             'titre'               => ucfirst((string)htmlspecialchars($input['titre'] ?? 'Disponible')),
@@ -889,7 +893,7 @@ class AgendasController extends BaseController
             ($end > $fin) ? $end = $fin : $end;
             $slots[] = [
                 'id'     => $i,
-                'debut'  => $debut,
+                'debut'  => date('H:i:s', strtotime("$debut + " . 1 . " minutes")),
                 'fin'    => $end,
                 'occupe' => false,
             ];

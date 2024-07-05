@@ -107,6 +107,9 @@ class ConsultationsController extends BaseController
             $consult->expertise;
             $consult->expertise ? $consult->expertise->documents : null;
         }
+        if ($consult->isSecondAdvice) {
+            $consult->previous;
+        }
         $consult->documents;
         $consult->transaction;
         $response = [
@@ -230,6 +233,10 @@ class ConsultationsController extends BaseController
         foreach ($input as $key => $value) {
             $cons->set($key, $value);
         }
+        if (isset($input['bilan'])) {
+            $cons->set("statut", ConsultationEntity::TERMINE);
+        }
+
         $input ? $cons->update() : null;
         $titles = [];
         // if (isset($input['documents'])) {
@@ -452,6 +459,7 @@ class ConsultationsController extends BaseController
         $avisInfo = array_filter($avisInfo);
         model("AvisExpertModel")->db->transBegin();
         $avisInfo['id'] = model("AvisExpertModel")->insert($avisInfo);
+        model("ConsultationsModel")->update($consult->id, ["withExpertise" => true]);
         if (isset($input['attachements'])) {
             $idAvis  = $avisInfo['id'];
             $attachs = array_map(function ($e) use ($idAvis) {
@@ -623,7 +631,41 @@ class ConsultationsController extends BaseController
         return $this->getResponse($response);
     }*/
 
+    /**
+     * Vérifie le code de consultation fourni.
+     *
+     * @param  string $consultCode
+     * @return ResponseInterface The HTTP response.
+     */
+    public function verifCode(string $consultCode)
+    {
+        $consult = model("consultationsModel")->where("code", $consultCode)->first();
 
+        if (!$consult) {
+            $response = [
+                'statut'  => 'no',
+                'message' => 'Consultation introuvable.',
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+        }
+        if ($consult->medecin_user_id['idUtilisateur'] != $this->request->utilisateur->idUtilisateur) {
+            $response = [
+                'statut'  => 'no',
+                'message' => "Vous n'êtes pas authorisé à effectuer cette consultation.",
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+        }
+        if ($consult->statut == ConsultationEntity::statuts[ConsultationEntity::VALIDE]) {
+            $statut = ConsultationEntity::statuts[ConsultationEntity::ENCOURS];
+            model("consultationsModel")->update($consult->id, ["statut" => ConsultationEntity::ENCOURS]);
+        }
+        $response = [
+            'statut' => 'ok',
+            'message' => 'Code valide.',
+            'data'    => ["code" => $consult->code, "statut" => $statut ?? $consult->statut]
+        ];
+        return $this->sendResponse($response);
+    }
 
 
     /**

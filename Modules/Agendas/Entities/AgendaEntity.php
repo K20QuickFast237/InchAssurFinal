@@ -11,6 +11,7 @@ class AgendaEntity extends Entity
 
     const DAY = [1 => 'Lundi', 2 => 'Mardi', 3 => 'Mercredi', 4 => 'Jeudi', 5 => 'Vendredi', 6 => 'Samedi', 7 => 'Dimanche',];
     const NOT_AVAILABLE = 0, AVAILABLE = 1;
+    // const DEFAULT_DUREE = 30;
 
     protected $datamap = [
         'idAgenda'     => 'id',
@@ -23,6 +24,7 @@ class AgendaEntity extends Entity
     // Defining a type with parameters
     protected $casts = [
         'id'     => "integer",
+        'duree'  => "integer",
         'statut' => "etatcaster[Indisponible,Disponible]",
     ];
 

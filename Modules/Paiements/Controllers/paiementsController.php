@@ -609,7 +609,7 @@ class PaiementsController extends ResourceController
                 "reste_a_payer" => (float)$transaction->reste_a_payer - $amount,
                 'etat' => TransactionEntity::TERMINE,
             ]);
-            model('AvisExpertModel')->update($avis->id, ['status' => AvisExpertEntity::EN_COURS]);
+            model('AvisExpertModel')->update($avis->id, ['statut' => AvisExpertEntity::EN_COURS]);
             $paiementInfo['statut'] = PaiementEntity::VALIDE;
             $message = "Paiement réussi.";
         } else {
@@ -631,7 +631,7 @@ class PaiementsController extends ResourceController
             // This example show payment url
             $data    = ['url' => \Monetbil::url($monetbil_args)];
             $message = "Paiement Initié.";
-            $paiementInfo['status'] = PaiementEntity::EN_COURS;
+            $paiementInfo['statut'] = PaiementEntity::EN_COURS;
         }
         // Ajouter le paiement
         model("PaiementsModel")->insert($paiementInfo);
@@ -744,6 +744,20 @@ class PaiementsController extends ResourceController
                 return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
             }
 
+            // mettre à jour l'agenda du médecin
+            $heure = $consult->heure;
+            $agenda = model("AgendasModel")->where('proprietaire_id', $consult->medecin_user_id['idUtilisateur'])
+                ->where('jour_dispo', $consult->date)
+                ->where('heure_dispo_debut <=', $heure)
+                ->where('heure_dispo_fin >=', $heure)
+                ->first();
+            $slot = array_filter($agenda->slots, function ($sl) use ($heure) {
+                return strtotime($sl['debut']) <= strtotime($heure) && strtotime($sl['fin']) > strtotime($heure);
+            });
+            $slot = reset($slot);
+            $agenda->removeSlot($slot['id']);
+            model("AgendasModel")->update($agenda->id, ['slots' => $agenda->slots]);
+
             // Modifier les status
             // model('TransactionsModel')->update($transaction->transaction_id, ['etat' => TransactionEntity::TERMINE]);
             model("TransactionsModel")->update($transaction->transaction_id, [
@@ -845,11 +859,14 @@ class PaiementsController extends ResourceController
         //     ->select('transactions.*')
         //     ->where("ligne_id", $idLigneTransact)
         //     ->first();
+        $identifier = $this->getIdentifier($item_ref, 'id');
+        $consultID = model("ConsultationsModel")->where($identifier['name'], $identifier['value'])->findColumn('id')[0];
+
         $transactInfo = model('TransactionsModel')
             ->join('transaction_lignes', 'transactions.id=transaction_id', 'left')
             ->join('lignetransactions',  'ligne_id=lignetransactions.id', 'left')
             ->where('produit_group_name', 'Consultation')
-            ->where('produit_id', $item_ref)
+            ->where('produit_id', $consultID)
             ->first();
         if (!$transactInfo) {
             $response = [
@@ -859,7 +876,7 @@ class PaiementsController extends ResourceController
             ];
             return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
         }
-
+        model("PaiementsModel")->db->transBegin();
         if (Monetbil::STATUS_SUCCESS == $payment_status) {
             // Successful payment!
             // mettre à jour le statut du paiement
@@ -877,18 +894,23 @@ class PaiementsController extends ResourceController
                 // mettre à jour le statut de la consultation
                 $consultation = model("ConsultationsModel")->where("code", $item_ref)->first();
                 model("ConsultationsModel")->where("id", $consultation->id)->set('statut', ConsultationEntity::VALIDE)->update();
+
                 // mettre à jour l'agenda du médecin
                 $heure = $consultation->heure;
-                $agenda = model("AgendasModel")->where('proprietaire_id', $consultation->medecin_user_id)
+                $agenda = model("AgendasModel")->where('proprietaire_id', $consultation->medecin_user_id['idUtilisateur'])
                     ->where('jour_dispo', $consultation->date)
                     ->where('heure_dispo_debut <=', $heure)
                     ->where('heure_dispo_fin >=', $heure)
                     ->first();
-                $slot = reset(array_filter($agenda->slots, function ($sl) use ($heure) {
-                    strtotime($sl['debut']) <= strtotime($heure) && strtotime($sl['fin']) >= strtotime($heure);
-                }));
+
+                $slot = array_filter($agenda->slots, function ($sl) use ($heure) {
+                    return strtotime($sl['debut']) <= strtotime($heure) && strtotime($sl['fin']) > strtotime($heure);
+                });
+                $slot = reset($slot);
                 $agenda->removeSlot($slot['id']);
-                $agenda->save();
+                model("AgendasModel")->update($agenda->id, ['slots' => $agenda->slots]);
+
+                $data = ['idConsultation' => $consultation->id];
             } else {
                 model("TransactionsModel")->update($transactInfo->id, ['etat' => TransactionEntity::EN_COURS]);
             }
@@ -916,10 +938,11 @@ class PaiementsController extends ResourceController
             $message = "Echec du Paiement.";
             $code = ResponseInterface::HTTP_BAD_REQUEST;
         }
+        model("PaiementsModel")->db->transCommit();
         $response = [
             'statut'  => 'ok',
             'message' => $message,
-            'data'    => [],
+            'data'    => $data ?? [],
         ];
         return $this->sendResponse($response, $code);
     }
@@ -990,7 +1013,7 @@ class PaiementsController extends ResourceController
                 'etat' => TransactionEntity::TERMINE,
             ]);
             // mettre à jour le statut de l'avis
-            model('AvisExpertModel')->update($item_ref, ['status' => AvisExpertEntity::EN_COURS]);
+            model('AvisExpertModel')->update($item_ref, ['statut' => AvisExpertEntity::EN_COURS]);
             // mettre à jour la souscription (les services disponibles)
         } elseif (Monetbil::STATUS_CANCELLED == $payment_status) {
             // mettre à jour le statut du paiement
@@ -998,7 +1021,7 @@ class PaiementsController extends ResourceController
             // mettre à jour le statut de la transaction
             // model("TransactionsModel")->update($transaction->transaction_id, ['etat' => TransactionEntity::TERMINE]);
             // mettre à jour le statut de l'avis
-            // model('AvisExpertModel')->update($item_ref, ['status' => AvisExpertEntity::ANNULE]);
+            // model('AvisExpertModel')->update($item_ref, ['statut' => AvisExpertEntity::ANNULE]);
             $message = "Paiement Annulé.";
             $code = ResponseInterface::HTTP_BAD_REQUEST;
         } else {

@@ -58,6 +58,56 @@ class RdvsController extends BaseController
         return $this->sendResponse($response);
     }
 
+    public function teste()
+    {
+        // mettre à jour l'agenda du médecin
+        /* date, heure, idMedecin */
+        $input = $this->getRequestInput($this->request);
+        $heure = $input['heure'];
+        $date  = $input['date'];
+        $idMed = $input['idMedecin'];
+        /*$agenda = model("AgendasModel")->where('proprietaire_id', $idMed)
+            ->where('jour_dispo', $date)
+            ->where('heure_dispo_debut <=', $heure)
+            ->where('heure_dispo_fin >=', $heure)
+            ->first();
+
+        $slot = array_filter($agenda->slots, function ($sl) use ($heure) {
+            return strtotime($sl['debut']) <= strtotime($heure) && strtotime($sl['fin']) > strtotime($heure);
+        });
+        $slot = reset($slot);
+        $agenda->removeSlot($slot['id']);
+        // print_r($agenda);
+        model("AgendasModel")->update($agenda->id, ['slots' => $agenda->slots]);
+        echo "weldone :)";
+        exit;*/
+        /*--------------------------------------------------------------------------------------------------------------*/
+        /*--------------------------------------------------------------------------------------------------------------*/
+        /*--------------------------------------------------------------------------------------------------------------*/
+        $agenda = model("AgendasModel")->where('proprietaire_id', $input['idMedecin'])
+            ->where('jour_dispo', $input['date'])
+            ->where('heure_dispo_debut <=', $heure)
+            ->where('heure_dispo_fin >=', $heure)
+            ->first();
+        print_r($agenda);
+        exit;
+        $slotID = 6;
+        $slotExist = array_filter($agenda->slots, function ($slot) use ($slotID) {
+            return $slot['id'] == $slotID;
+        });
+
+        if (!$slotExist || (bool)(reset($slotExist)['occupe'] ?? false)) // le slot n'esiste pas oubien est occupé
+        {
+            echo "le Slot n'est pas dispo";
+        } else {
+            $agenda->removeSlot($slotID);
+        }
+
+        model("AgendasModel")->update($agenda->id, ['slots' => $agenda->slots]);
+        echo "Weldone :)";
+        exit;
+    }
+
     /**
      * Retourne la liste de tous les rendez-vous enregistrés
      *
@@ -132,15 +182,15 @@ class RdvsController extends BaseController
                 'errors' => ['required' => 'Précisez la date du Rendez-vous.', 'valid_date' => 'Format de date attendu YYYY-MM-DD.']
             ],
             'heure' => [
-                'rules'  => 'required|valid_date[H:i]',
-                'errors' => ['required' => 'Précisez l\'heure du Rendez-vous.', 'valid_date' => 'Format d\'heure attendu hh:mm.']
+                'rules'  => 'required|valid_date[H:i:s]',
+                'errors' => ['required' => 'Précisez l\'heure du Rendez-vous.', 'valid_date' => 'Format d\'heure attendu hh:mm:ss.']
             ],
             'idCreneau' => [
                 'rules'  => 'required|numeric',
                 'errors' => ['required' => 'Mauvaise identification du créneau choisi.', 'numeric' => 'Mauvaise identification du créneau choisi.']
             ],
             'withAssur' => [
-                'rules'  => 'required|permit_empty',
+                'rules'  => 'permit_empty',
                 'errors' => ['required' => 'Vous devez préciser si avec assurance ou non.']
             ],
             // 'idAssurance' => [
@@ -151,10 +201,10 @@ class RdvsController extends BaseController
                 'rules'  => 'required_with[withAssur]|permit_empty|is_not_unique[souscriptions.id]',
                 'errors' => ['required' => 'Souscription requise pour consultation avec asssurance.']
             ],
-            // 'duree' => [
-            //     'rules'  => 'if_exist|numeric',
-            //     'errors' => ['if_exist' => 'Précisez la duree du Rendez-vous', 'numeric' => 'Duree invalide.']
-            // ],
+            'duree' => [
+                'rules'  => 'if_exist|numeric',
+                'errors' => ['if_exist' => 'Précisez la duree du Rendez-vous', 'numeric' => 'Duree invalide.']
+            ],
             'canal' => [
                 'rules'  => 'required|is_not_unique[canaux.nom]',
                 'errors' => ['required' => 'Précisez le canal de consultation.', 'is_not_unique' => 'Canal de consultation invalide.']
@@ -164,7 +214,7 @@ class RdvsController extends BaseController
                 'errors' => ['required' => 'Précisez la langue de consultation.', 'is_not_unique' => 'Langue de consultation invalide.']
             ],
             'idLocalisation' => [
-                'rules'  => 'required|is_not_unique[localisations.id]',
+                'rules'  => 'if_exist|is_not_unique[localisations.id]',
                 'errors' => ['required' => 'Précisez la ville de consultation.', 'is_not_unique' => 'Localisation de consultation invalide.']
             ],
             // 'skill'      => [
@@ -179,25 +229,25 @@ class RdvsController extends BaseController
             //     'rules'  => 'required|is_not_unique[utilisateurs.id]',
             //     'errors' => ['is_not_unique' => 'Emetteur inconnu.', 'required' => 'Précisez l\'emetteur du Rendez-vous.']
             // ],
-            'idDestinataire' => [
+            'idMedecin' => [
                 'rules'  => 'required|is_not_unique[utilisateurs.id]',
                 'errors' => ['is_not_unique' => 'Destinataire inconnu.', 'required' => 'Précisez le destinataire du Rendez-vous.']
             ],
             'isSecondAdvice' => [
-                'rules'  => 'required|permit_empty',
+                'rules'  => 'permit_empty',
                 'errors' => ['required' => 'Vous devez préciser si c\'est un second avis ou non.']
             ],
             'isExpertise' => [
-                'rules'  => 'required|permit_empty',
+                'rules'  => 'permit_empty',
                 'errors' => ['required' => 'Précisez si il s\'agit d\'une expertise ou non.'],
             ],
             'idPrevious' => [
                 'rules'  => 'required_with[isSecondAdvice]|permit_empty|is_not_unique[consultations.id]',
-                'errors' => ['required' => 'Préciser la consultation de départ pour un second avis.', 'is_not_unique' => 'Consultation de départ invalide.']
+                'errors' => ['required_with' => 'Préciser la consultation de départ pour un second avis.', 'is_not_unique' => 'Consultation de départ invalide.']
             ],
             'operateur'  => [
-                'rules'  => 'required|is_not_unique[paiement_modes.operateur]',
-                'errors' => ['required' => 'Opérateur non défini.', 'is_not_unique' => 'Opérateur invalide'],
+                'rules'  => 'required_without[withAssur]|if_exist|is_not_unique[paiement_modes.operateur]',
+                'errors' => ['required_without' => 'Opérateur non défini.', 'is_not_unique' => 'Opérateur invalide'],
             ],
         ];
 
@@ -241,10 +291,10 @@ class RdvsController extends BaseController
             ->select('nom, description, skills.id, medecin_id, description_perso, cout, isExpert, cout_expert')
             ->join('skills', 'skills.id = medecin_skills.skill_id')
             ->where('skill_id', $input['idSkill'])
-            ->where('medecin_id', $input['idDestinataire'])
+            ->where('medecin_id', $input['idMedecin'])
             ->first() ?? [];
 
-        if ($input['isExpertise'] && !$skill['isExpert']) {
+        if (isset($input['isExpertise']) && $input['isExpertise'] && !$skill['isExpert']) {
             $response = [
                 'statut'  => 'no',
                 'message' => 'Le Médecin choisi ne consulte pas en Expertise pour ce motif.',
@@ -259,25 +309,20 @@ class RdvsController extends BaseController
             'heure'           => $input['heure'] ?? date('H:i:s'),
             'canal'           => $input['canal'],
             'langue'           => $input['langue'],
-            'localisation_id' => $input['idLocalisation'],
+            'localisation_id' => $input['idLocalisation'] ?? null,
             'skill'           => $skill['nom'],
             // 'prix'            => (float)$input['prix'],
-            'isAssured'       => (bool)$input['withAssur'] ?? false,
-            'isSecondAdvice'  => (bool)$input['isSecondAdvice'] ?? false,
-            'isExpertise'     => (bool)$input['isExpertise'],
-            'prix'            => (bool)$input['isExpertise'] ? $skill['cout_expert'] : $skill['cout'],
+            'isAssured'       => (bool)($input['withAssur'] ?? false),
+            'isSecondAdvice'  => (bool)($input['isSecondAdvice'] ?? false),
+            'isExpertise'     => (bool)($input['isExpertise'] ?? false),
+            'prix'            => isset($input['isExpertise']) ? $skill['cout_expert'] : $skill['cout'],
             // 'statut'          => ConsultationEntity::VALIDE,  // plus besoin de validation pour uns consultation payée
             // 'patient_user_id' => $input['idEmetteur'],
             'patient_user_id' => $utilisateur->id,
-            'medecin_user_id' => $input['idDestinataire'],
+            'medecin_user_id' => $input['idMedecin'],
             'statut'          => ConsultationEntity::ENATTENTE,
         ];
 
-        // if (isset($input['duree'])) {
-        //     $consultationInfos['duree'] = $input['duree'];
-        // } else {
-        //     $consultationInfos['duree'] = ConsultationEntity::DEFAULT_DUREE;
-        // }
         if ($consultationInfos['isSecondAdvice']) {
             $consultationInfos['previous_id'] = (int)$input['idPrevious'];
         }
@@ -286,6 +331,33 @@ class RdvsController extends BaseController
         $consultationInfos['code'] = $this->generatecodeConsult($consultModel);
 
         model("ConsultationsModel")->db->transBegin();
+        // vérification de la dispnibilité
+        $agenda = model("AgendasModel")->where('proprietaire_id', $consultationInfos['medecin_user_id'])
+            ->where('jour_dispo', $consultationInfos['date'])
+            ->where('heure_dispo_debut <=', $consultationInfos['heure'])
+            ->where('heure_dispo_fin >=', $consultationInfos['heure'])
+            ->first();
+        $slotID = (int)$input['idCreneau'];
+        $slotExist = array_filter($agenda->slots, function ($slot) use ($slotID) {
+            return $slot['id'] == $slotID;
+        });
+
+        if (!$slotExist || (bool)(reset($slotExist)['occupe'] ?? false)) // le slot n'esiste pas oubien est occupé
+        {
+            $response = [
+                'statut'  => 'no',
+                'message' => 'la date et l\'heure du rendez-vous sont invalides.',
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+        } else {
+            $agenda->removeSlot($slotID);
+        }
+
+        if (isset($input['duree'])) {
+            $consultationInfos['duree'] = $input['duree'];
+        } else {
+            $consultationInfos['duree'] = $agenda->duree;
+        }
 
         if ($consultationInfos['isAssured']) {
             $souscriptID = (int)$input['idSouscription'];
@@ -320,7 +392,8 @@ class RdvsController extends BaseController
             $service = $souscription->getService($serviceInfo->id);
             $service->quantite_utilise = $service->quantite_utilise + 1;
             $service->prix_couvert    = $service->prix_couvert + $prixCouvert;
-            $service->etat = $serviceInfo->prix_couverture > $service->prix_couvert && $serviceInfo->quantite > $service->quantite_utilise;
+            $etat = (float)$serviceInfo->prix_couverture > (float)$service->prix_couvert
+                && (int)$serviceInfo->quantite > (int)$service->quantite_utilise;
 
             model("SouscriptionServicesModel")->where('service_id', $service->id)
                 ->where('souscription_id', $service->souscription_id)
@@ -371,12 +444,12 @@ class RdvsController extends BaseController
                 $paiementInfo = [
                     'code'      => random_string('alnum', 10),
                     'montant'   => $prixCouvert,
-                    'statut'    => PaiementEntity::VALIDE,
+                    'statut'    => PaiementEntity::EN_COURS,
                     'mode_id'   => model("PaiementModesModel")->where('operateur', $input['operateur'])->findColumn('id')[0] ?? 1,
                     'auteur_id' => $utilisateur->id,
                 ];
                 $monetbil_args = array(
-                    'amount'      => $prixCouvert,
+                    'amount'      => $consultationInfos['prix'],
                     'phone'       => $input['telephone'] ?? $this->request->utilisateur->tel1,
                     'country'     => $input['pays'] ?? null,
                     'phone_lock'  => false,
@@ -389,7 +462,7 @@ class RdvsController extends BaseController
                     'notify_url'  => base_url('paiements/notfyConsult'),
                     'logo'        => base_url("uploads/images/logoinch.jpeg"),
                 );
-                // This example show payment url
+                // show payment url
                 $data    = ['url' => \Monetbil::url($monetbil_args)];
                 $message = "Paiement Initié.";
                 $tranctionEtat = TransactionEntity::INITIE;
@@ -410,7 +483,7 @@ class RdvsController extends BaseController
             "valeur_tva"      => 0, //$prixTVA,
             "net_a_payer"     => $consultationInfos['prix'],
             "avance"          => $prixCouvert,
-            "reste_a_payer"   => $consultationInfos['prix'] - $prixCouvert,
+            "reste_a_payer"   => $consultationInfos['isAssured'] ? $consultationInfos['prix'] - $prixCouvert : $prixCouvert,
             "pay_option_id"   => 1,
             "etat"            => $prixCouvert >= $consultationInfos['prix'] ? TransactionEntity::TERMINE : TransactionEntity::EN_COURS,
         ];
@@ -427,33 +500,11 @@ class RdvsController extends BaseController
             "prix_total_net"     => $consultationInfos['prix'],
         ];
 
-        // vérification de la dispnibilité
-        $agenda = model("AgendasModel")->where('proprietaire_id', $consultationInfos['medecin_user_id'])
-            ->where('jour_dispo', $consultationInfos['date'])
-            ->where('heure_dispo_debut <=', $consultationInfos['heure'])
-            ->where('heure_dispo_fin >=', $consultationInfos['heure'])
-            ->first();
-        $slotID = $input['idCreneau'];
-        $slotExist = array_filter($agenda->slots, function ($slot) use ($slotID) {
-            return $slot['id'] == $slotID;
-        });
-        if (!$slotExist) {
-            $response = [
-                'statut'  => 'no',
-                'message' => 'la date et l\'heure du rendez-vous sont invalides.',
-            ];
-            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
-        } else {
-            $agenda->removeSlot($slotID);
-        }
         // Mise à jour de l'agenda du médecin
-        if (!isset($tranctionEtat)) { // Soit qu'il n'a pas payé via MonetBill
-            model("AgendasModel")->where('id', $agenda->id)
-                ->set('slots', $agenda->slots)
-                // ->set('etat', (bool)count($agenda->slots))
-                ->update();
-        } else {
+        if (isset($tranctionEtat)) { // Soit qu'il n'a pas payé via MonetBill mais pas par portefeuille
             $transactInfo['etat'] = $tranctionEtat;
+        } else {
+            model("AgendasModel")->update($agenda->id, ['slots' => $agenda->slots]);
         }
 
         $ligneInfo['id'] = model("LignetransactionsModel")->insert($ligneInfo);
@@ -467,7 +518,7 @@ class RdvsController extends BaseController
         $response = [
             'statut'  => 'ok',
             'message' => "Rendez-vous ajouté.",
-            'data'    => $data ?? [],
+            'data'    => $data ?? ["idConsultation" => $consultationInfos['id']],
         ];
         return $this->sendResponse($response);
     }

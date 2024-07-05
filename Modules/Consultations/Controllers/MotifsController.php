@@ -25,6 +25,9 @@ class MotifsController extends BaseController
     public function showAll()
     {
         $motifs = model("MotifsModel")->findAll() ?? [];
+        // $motifs = model("MotifsModel")->join("skills_motif", "motifs.id=motif_id", "left")->join("skills", "skill_id=skills.id", "left")
+        //     ->select("motifs.id, motifs.nom as nom, motifs.description as description, skills.id as idSkill, skills.nom as nomSkill, skills.description as descriptionSkill")
+        //     ->findAll() ?? [];
 
         $response = [
             'statut'  => 'ok',
@@ -241,17 +244,17 @@ class MotifsController extends BaseController
         for ($i = 0; $i < count($meds); $i++) {
             $sks = array_values(array_filter($skills, fn ($s) => $s["medecin_id"] == $meds[$i]['idUtilisateur']));
             $meds[$i]['skills'] = array_map(fn ($sk) => [
-                "idSkill" => $sk["id"],
+                "idSkill" => (int)$sk["skill_id"],
                 "nom" => $sk["nom"],
                 "description" => $sk["description_perso"] ? $sk["description_perso"] : $sk["description"],
-                "cout" => $sk["cout"],
+                "cout" => (float)$sk["cout"],
                 "isExpert" => (bool)$sk["isExpert"],
-                "cout_expert" => $sk["isExpert"] ? $sk["cout_expert"] : null,
+                "cout_expert" => $sk["isExpert"] ? (float)$sk["cout_expert"] : null,
             ], $sks);
             $locats = array_values(array_filter($locations, fn ($l) => $l["medecin_id"] == $meds[$i]['idUtilisateur']));
             $meds[$i]['localisation'] = array_map(fn ($loc) =>
             [
-                "idLocalisation" => $loc['localisation_id'],
+                "idLocalisation" => (int)$loc['localisation_id'],
                 "etablissement"  => $loc['etablissement'],
                 "adresse"        => $loc['adresse'],
                 "ville"          => $loc['ville'],

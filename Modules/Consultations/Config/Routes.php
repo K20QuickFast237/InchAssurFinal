@@ -20,6 +20,7 @@ $routes->group('', ['namespace' => 'Modules\Consultations\Controllers'], static 
 });
 
 /******************************* Les RDVs *********************************/
+$routes->post('rdvs/test', '\Modules\Consultations\Controllers\RdvsController::teste');
 $routes->post('rdvs/(:segment)', '\Modules\Consultations\Controllers\RdvsController::update/$1');
 $routes->get('allRdvs', '\Modules\Consultations\Controllers\RdvsController::showAll');
 $routes->resource('rdvs', [
@@ -31,6 +32,7 @@ $routes->resource('rdvs', [
 /******************************* Les Consultations *********************************/
 $routes->post('consultations/(:segment)', '\Modules\Consultations\Controllers\ConsultationsController::update/$1');
 $routes->post('consultations/(:segment)/avisExpert', '\Modules\Consultations\Controllers\ConsultationsController::askAvisExpert/$1');
+$routes->post('consultations/(:segment)/verify', '\Modules\Consultations\Controllers\ConsultationsController::verifCode/$1');
 $routes->get('allConsultations', '\Modules\Consultations\Controllers\ConsultationsController::showAll');
 $routes->resource('consultations', [
     'controller' => '\Modules\Consultations\Controllers\ConsultationsController',

@@ -19,7 +19,7 @@ class AgendasModel extends Model
     protected $returnType       = AgendaEntity::class;
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['titre', 'heure_dispo_debut', 'heure_dispo_fin', 'statut', 'slots', 'jour_dispo', 'proprietaire_id'];
+    protected $allowedFields    = ['titre', 'heure_dispo_debut', 'heure_dispo_fin', 'statut', 'slots', 'jour_dispo', 'duree', 'proprietaire_id'];
 
     // Dates
     protected $useTimestamps = true;
