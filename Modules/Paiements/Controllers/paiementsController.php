@@ -1187,12 +1187,13 @@ class PaiementsController extends ResourceController
 
             //associate the subscription services.
             $serviceIds = model("AssuranceServicesModel")->where("assurance_id", $idAssurance)->findColumn('service_id');
-            $sousID = $souscription->id;
-            $sousServInfo = array_map(function ($serviceId) use ($sousID) {
-                return ['souscription_id' => $sousID, 'service_id' => $serviceId];
-            }, $serviceIds);
-            model("SouscriptionServicesModel")->insertBatch($sousServInfo);
-
+            if ($serviceIds) {
+                $sousID = $souscription->id;
+                $sousServInfo = array_map(function ($serviceId) use ($sousID) {
+                    return ['souscription_id' => $sousID, 'service_id' => $serviceId];
+                }, $serviceIds);
+                model("SouscriptionServicesModel")->insertBatch($sousServInfo);
+            }
             // Mark the order as paid in your system
         } elseif (Monetbil::STATUS_CANCELLED == $payment_status) {
             // Transaction cancelled

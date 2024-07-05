@@ -31,6 +31,7 @@ $routes->post('membres', '\Modules\Utilisateurs\Controllers\UtilisateursControll
 
 //------------ Pocket ---------------------------
 $routes->get('pocket', '\Modules\Utilisateurs\Controllers\PortefeuillesController::getUserPocket');
+$routes->get('pocket/recharge', '\Modules\Utilisateurs\Controllers\PortefeuillesController::recharge');
 
 //------------ Membres ---------------------------
 $routes->post('membres', '\Modules\Utilisateurs\Controllers\UtilisateursController::addMember');

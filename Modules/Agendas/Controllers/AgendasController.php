@@ -718,7 +718,7 @@ class AgendasController extends BaseController
         $agenda = model("AgendasModel")
             ->where("proprietaire_id", $utilisateur->id)
             ->where("statut", AgendaEntity::AVAILABLE)
-            ->where("jour_dispo >", date("Y-m-d"))
+            ->where("jour_dispo >=", date("Y-m-d"))
             ->orderBy('dateCreation', 'desc')
             ->findAll();
 
