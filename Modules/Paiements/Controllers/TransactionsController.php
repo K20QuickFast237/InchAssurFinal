@@ -80,6 +80,7 @@ class TransactionsController extends ResourceController
         if ($transaction) {
             $transaction->lignes;
             $transaction->paiements;
+            $transaction->nextPaymentAmount;
         }
 
         $response = [

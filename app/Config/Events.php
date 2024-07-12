@@ -49,12 +49,10 @@ Events::on('newRegistration', static function ($user, $codeActivation, $token) {
     // Clear the email
     $email->clear();
 });
-
 Events::on('newRegistration', static function ($user, $codeActivation, $token = null) {
-    $msg  = "Pour activez votre compte, utilisez le code:$codeActivation";
-    // $dest = ["676233273"];
-    $dest = [$user->tel1];
-    // sendSmsMessage($dest, "InchAssur", $msg);
+    $msg  = "Bienvenu sur IncHAssur. Activez votre compte avec le code: $codeActivation";
+    $dest = [$user->tel1,];
+    sendSmsMessage($dest, "InchAssur", $msg);
 });
 
 Events::on('profilAttributed', static function ($utilisateur, $profil) {
@@ -78,7 +76,6 @@ Events::on('profilAttributed', static function ($utilisateur, $profil) {
     // Clear the email
     $email->clear();
 });
-
 
 #-------------------------------------------------
 # Evenements à l'invalidation d'une souscription.
@@ -117,6 +114,11 @@ Events::on("EndedSouscription", static function ($utilisateur, $codeSouscription
     // Clear the email
     $email->clear();
 });
+Events::on('EndedSouscription', static function ($utilisateur, $codeSouscription, $codetransaction = null, $normal = true) {
+    $msg  = "Cher $utilisateur->prenom, Nous vous informons que votre souscription $codeSouscription est arrivée à expiration. Connectez vous à votre compte pour voir les détails. Merci de faire confiance à IncHAssur.";
+    $dest = [$utilisateur->tel1];
+    sendSmsMessage($dest, "InchAssur", $msg);
+});
 
 #-------------------------------------------------
 # Evenements à l'échéance de paiement.
@@ -152,6 +154,11 @@ Events::on("PaiementRemember", static function ($utilisateur, $codetransaction) 
     // Clear the email
     $email->clear();
 });
+Events::on('PaiementRemember', static function ($utilisateur, $codetransaction) {
+    $msg  = "Cher $utilisateur->prenom, Nous vous rappelons que l'échéance de paiement pour votre transaction numéro $codetransaction est prévue pour demain. Merci de faire confiance à IncHAssur.";
+    $dest = [$utilisateur->tel1];
+    sendSmsMessage($dest, "InchAssur", $msg);
+});
 
 // Pour le cas de paiement sur une période.
 Events::on("PaiementSuggest", static function ($utilisateur, $codetransaction, $dateFin) {
@@ -184,6 +191,11 @@ Events::on("PaiementSuggest", static function ($utilisateur, $codetransaction, $
 
     // Clear the email
     $email->clear();
+});
+Events::on('PaiementSuggest', static function ($utilisateur, $codetransaction, $dateFin) {
+    $msg  = "Cher $utilisateur->prenom, N'oubliez pas, l'échéance de paiement pour la transaction numero $codetransaction qui est prévue pour le $dateFin. Merci de faire confiance à IncHAssur.";
+    $dest = [$utilisateur->tel1];
+    sendSmsMessage($dest, "InchAssur", $msg);
 });
 
 

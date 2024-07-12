@@ -233,9 +233,9 @@ class ConsultationsController extends BaseController
         foreach ($input as $key => $value) {
             $cons->set($key, $value);
         }
-        if (isset($input['bilan'])) {
-            $cons->set("statut", ConsultationEntity::TERMINE);
-        }
+        // if (isset($input['bilan'])) {
+        //     $cons->set("statut", ConsultationEntity::TERMINE);
+        // }
 
         $input ? $cons->update() : null;
         $titles = [];
@@ -387,8 +387,7 @@ class ConsultationsController extends BaseController
             ->first() ?? [];
 
         $identifier = $this->getIdentifier($identifier);
-        // print_r($identifier);
-        // exit;
+
         $consult = model("ConsultationsModel")->where($identifier['name'], $identifier['value'])->first();
         if (!$consult) {
             $response = [
@@ -521,17 +520,20 @@ class ConsultationsController extends BaseController
         }
         model("AvisExpertModel")->db->transCommit();
         $sender   = $this->request->utilisateur;
-        $receiver = model("UtilisateursModel")->asArray()
-            ->select('email, nom, prenom')
+        $receiver = model("UtilisateursModel")
+            ->select('email, tel1, nom, prenom')
             ->where('id', $input['idMedecin'])
             ->first();
         // Notifie en cas de paiement complet
+        $patient = model("UtilisateursModel")->where('id', $consult->patient['idUtilisateur'])->first();
         if ($prixCouvert >= $skill['cout_expert']) {
-            $this->sendAvisDemandConfirmedMail($sender->email, $sender->prenom, $skill->nom);
-            $this->sendAvisDemandedMail($receiver['email'], $receiver['nom'] . " " . $receiver['prenom']);
+            $recipients = [$sender, $patient];
+            $this->sendAvisDemandConfirmedMail($recipients, $skill->nom);
         } else {
-            $this->sendAvisToPayMail($receiver['email'], $receiver['nom'] . " " . $receiver['prenom']);
+            $this->sendAvisDemandConfirmedMail([$sender], $skill->nom);
+            $this->sendAvisToPayMail($patient);
         }
+        $this->sendAvisDemandedMail($receiver);
 
         $response = [
             'statut'  => 'ok',
@@ -634,17 +636,26 @@ class ConsultationsController extends BaseController
     /**
      * Vérifie le code de consultation fourni.
      *
-     * @param  string $consultCode
+     * @param string $consultCode
      * @return ResponseInterface The HTTP response.
      */
     public function verifCode(string $consultCode)
     {
-        $consult = model("consultationsModel")->where("code", $consultCode)->first();
+        $consult = model("consultationsModel")
+            ->where("code", $consultCode)
+            ->first();
 
         if (!$consult) {
             $response = [
                 'statut'  => 'no',
                 'message' => 'Consultation introuvable.',
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+        }
+        if (!array_search($consult->statut, [ConsultationEntity::statuts[ConsultationEntity::VALIDE], ConsultationEntity::statuts[ConsultationEntity::ENCOURS], ConsultationEntity::statuts[ConsultationEntity::TRANSMIS]])) {
+            $response = [
+                'statut'  => 'no',
+                'message' => "Consultation $consult->statut ne peut être démarrée.",
             ];
             return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
         }
@@ -655,14 +666,24 @@ class ConsultationsController extends BaseController
             ];
             return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
         }
-        if ($consult->statut == ConsultationEntity::statuts[ConsultationEntity::VALIDE]) {
-            $statut = ConsultationEntity::statuts[ConsultationEntity::ENCOURS];
-            model("consultationsModel")->update($consult->id, ["statut" => ConsultationEntity::ENCOURS]);
+        $dateCode = new \DateTime($consult->date . ' ' . $consult->heure);
+        $dateCode->modify('+2 day');
+        if (strtotime(date("Y-m-d H:i:s") > strtotime((string)$dateCode))) {
+            model("consultationsModel")->update($consult->id, ['statut' => ConsultationEntity::EXPIREE]);
+            $response = [
+                'statut'  => 'no',
+                'message' => "Consultation expirée le $dateCode.",
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
         }
+        // if ($consult->statut == ConsultationEntity::statuts[ConsultationEntity::VALIDE]) {
+        //     $statut = ConsultationEntity::statuts[ConsultationEntity::ENCOURS];
+        //     model("consultationsModel")->update($consult->id, ["statut" => ConsultationEntity::ENCOURS]);
+        // }
         $response = [
             'statut' => 'ok',
             'message' => 'Code valide.',
-            'data'    => ["code" => $consult->code, "statut" => $statut ?? $consult->statut]
+            // 'data'    => ["code" => $consult->code, "statut" => $statut ?? $consult->statut]
         ];
         return $this->sendResponse($response);
     }
@@ -709,12 +730,17 @@ class ConsultationsController extends BaseController
         return false;
     }
 
-    public static function sendAvisToPayMail(string $recipient, string $nomComplet)
+    public static function sendAvisToPayMail(object $recipient)
     {
+        $msg  = "Demande d'expertise initiée, Rendez-vous dans votre espace personnel sous la rubrique consultations pour procéder au paiement.";
+        $dest = [$recipient['tel1']];
+        sendSmsMessage($dest, "InchAssur", $msg);
+
+        $nomComplet = $recipient['nom'] . " " . $recipient['prenom'];
         $email = Services::email();
 
         $email->setFrom('nanguedevops@gmail.com', 'IncH Assurance');
-        $email->setTo($recipient);
+        $email->setTo($recipient['email']);
         $email->setCC(['tonbongkevin@gmail.com']);
         $email->setSubject('Demande Avis Expert Initiée');
         $email->setMessage("<h2>Bonjour " . $nomComplet . ".</h2>
@@ -731,15 +757,21 @@ class ConsultationsController extends BaseController
             }
             $tentative++;
         }
+
         return false;
     }
 
-    public static function sendAvisDemandedMail(string $recipient, string $nomComplet)
+    public static function sendAvisDemandedMail(object $recipient)
     {
+        $msg  = "Bonjour " . $recipient->prenom . ", Vous venez de recevoir une demande d'avis expert. Merci de faire confiance à IncHAssur.";
+        $dest = [$recipient->tel1];
+        sendSmsMessage($dest, "InchAssur", $msg);
+
+        $nomComplet = $recipient->nom . " " . $recipient->prenom;
         $email = Services::email();
 
         $email->setFrom('nanguedevops@gmail.com', 'IncH Assurance');
-        $email->setTo($recipient);
+        $email->setTo($recipient->email);
         $email->setCC(['tonbongkevin@gmail.com']);
         $email->setSubject('Nouveau Rendez-vous');
         $email->setMessage("<h2>Bonjour " . $nomComplet . ".</h2>
@@ -758,14 +790,20 @@ class ConsultationsController extends BaseController
         return false;
     }
 
-    // private function sendRdvConfirmedMail(string $recipient, string $nomComplet, string $date, string $heure, string $code)
-    public static function sendRdvConfirmedMail(string $recipient, string $nomComplet, string $date, string $heure, string $code)
+    // private function sendRdvConfirmedMail(string $recipient, string $date, string $heure, string $code)
+    public static function sendRdvConfirmedMail(object $recipient, string $date, string $heure, string $code)
     {
-        $date = date('d M Y', strtotime($date));
+        $nomComplet = $recipient->nom . " " . $recipient->prenom;
+        $date = date('d-M-Y', strtotime($date));
+
+        $msg  = "Bonjour $recipient->prenom, votre rendez-vous numéro $code du $date à $heure est confirmé. Merci de faire confiance à IncHAssur.";
+        $dest = [$recipient->tel1];
+        sendSmsMessage($dest, "InchAssur", $msg);
+
         $email = Services::email();
 
         $email->setFrom('nanguedevops@gmail.com', 'IncH Assurance');
-        $email->setTo($recipient);
+        $email->setTo($recipient->email);
         $email->setCC(['tonbongkevin@gmail.com']);
         $email->setSubject('Confirmation de consultation');
         $email->setMessage("<h2>Bonjour " . $nomComplet . ".</h2>
@@ -785,27 +823,33 @@ class ConsultationsController extends BaseController
         return false;
     }
 
-    public static function sendAvisDemandConfirmedMail(string $recipient, string $nomComplet, string $skillName)
+    public static function sendAvisDemandConfirmedMail(array $recipients, string $skillName)
     {
         $email = Services::email();
+        foreach ($recipients as $recipient) {
+            $nomComplet = $recipient->nom . " " . $recipient->prenom;
 
-        $email->setFrom('nanguedevops@gmail.com', 'IncH Assurance');
-        $email->setTo($recipient);
-        $email->setCC(['tonbongkevin@gmail.com']);
-        $email->setSubject('Confirmation de consultation');
-        $email->setMessage("<h2>Bonjour " . $nomComplet . ".</h2>
+            $email->setFrom('nanguedevops@gmail.com', 'IncH Assurance');
+            $email->setTo($recipient);
+            $email->setCC(['tonbongkevin@gmail.com']);
+            $email->setSubject('Confirmation de consultation');
+            $email->setMessage("<h2>Bonjour " . $nomComplet . ".</h2>
                             <br>Votre demande d'expertise pour $skillName a été envoyée.<br>
                             InchAssur-" . date('d-m-Y H:i'));
-        $tentative = 0;
-        while ($tentative < 3) {
-            try {
-                $email->send();
-                return true;
-            } catch (\Exception $e) {
-                log_message('warnig', $e->getMessage());
-            }
-            $tentative++;
+            // $tentative = 0;
+            // while ($tentative < 3) {
+            //     try {
+            $email->send();
+            //     } catch (\Exception $e) {
+            //         log_message('warnig', $e->getMessage());
+            //     }
+            //     $tentative++;
+            // }
+
+            $msg  = "Demande d'expertise pour $skillName envoyée.";
+            $dest = [$recipient->tel1];
+            sendSmsMessage($dest, "InchAssur", $msg);
         }
-        return false;
+        return true;
     }
 }

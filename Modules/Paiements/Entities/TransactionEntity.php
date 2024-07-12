@@ -7,8 +7,10 @@ use CodeIgniter\Entity\Entity;
 class TransactionEntity extends Entity
 {
     // const TOTALE = 'Totale', PARTIEL = 'Partielle';
-    const INITIE = 0, TERMINE = 1, EN_COURS = 2;
-    public static $etats = ["Initiée", "Terminée", "En Cours"];
+    // const INITIE = 0, TERMINE = 1, EN_COURS = 2;
+    const INITIE = 0, EN_COURS = 1, TERMINE = 2;
+    // public static $etats = ["Initiée", "Terminée", "En Cours"];
+    public static $etats = ["Initiée", "En Cours", "Terminée"];
 
     protected $datamap  = [
         'idTransaction' => 'id',
@@ -88,5 +90,15 @@ class TransactionEntity extends Entity
         }
 
         return $this->attributes['paiements'];
+    }
+
+    public function getNextPaymentAmount()
+    {
+        if (!isset($this->attributes['nextPaymentAmount'])) {
+            $payOption = model("PaiementOptionsModel")->find($this->attributes['pay_option_id']);
+            $this->attributes['nextPaymentAmount'] = $payOption->get_nextStepAmount($this);
+        }
+
+        return $this->attributes['nextPaymentAmount'];
     }
 }

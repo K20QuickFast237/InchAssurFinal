@@ -324,7 +324,9 @@ class Auth extends BaseController
             ];
             return $this->sendResponse($response, ResponseInterface::HTTP_FORBIDDEN);
         } else {
-            $token = $this->sendResetPwdEmail($user);
+            $token = service('jwtmanager')->generateToken($user, ttl: MONTH);
+            $user->tel = $utilisateur->tel1;
+            $this->sendResetPwdEmail($user, $token);
             $response = [
                 'statut'  => 'ok',
                 'message' => 'un mail de réinitialisation a été envoyé',
@@ -475,11 +477,9 @@ class Auth extends BaseController
      * @var recipients adresse email de destination
      * @return jsonWebToken|false
      */
-    private function sendResetPwdEmail(user $recipient)
+    private function sendResetPwdEmail(user $recipient, string $token)
     {
         // generation du token du lien
-        $manager = service('jwtmanager');
-        $token   = $manager->generateToken($recipient, ttl: MONTH);
 
         $email = emailer()->setFrom(setting('Email.fromEmail'), setting('Email.fromName') ?? '');
         $email->setTo($recipient->email);
@@ -503,6 +503,13 @@ class Auth extends BaseController
             }
             $tentative++;
         }
+
+        $mailzones = explode('@', $recipient->email);
+        $bluredEmail = "****" . substr($mailzones[0], -3) . "@" . $mailzones[1];
+        $msg  = "Pour réinitialiser votre mot de passe, suivez le lien qui vous a été envoyé par email à l'adresse $bluredEmail";
+        $dest = [$recipient->tel];
+        sendSmsMessage($dest, "InchAssur", $msg);
+
         return $token;
     }
 }

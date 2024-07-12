@@ -1,8 +1,9 @@
 <?php
 
-namespace Modules\Produits\Models;
+namespace Modules\Paiements\Models;
 
 use CodeIgniter\Model;
+use Modules\Paiements\Entities\ReductionEntity;
 
 class ReductionsModel extends Model
 {
@@ -10,11 +11,11 @@ class ReductionsModel extends Model
     protected $table            = 'reductions';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
-    protected $insertID         = 0;
-    protected $returnType       = '\Modules\Produits\Entities\ReductionsEntity';
+    protected $insertID         = 1;
+    protected $returnType       = ReductionEntity::class;
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['description', 'code', 'auteur_id', 'valeur', 'taux', 'usage_max_nombre', 'expiration_date', 'utilise_nombre'];
+    protected $allowedFields    = ['description', 'code', 'auteur_id', 'valeur', 'taux', 'etat', 'usage_max_nombre', 'expiration_date', 'utilise_nombre'];
 
     // Dates
     protected $useTimestamps = false;

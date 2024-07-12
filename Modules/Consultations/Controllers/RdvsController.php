@@ -60,52 +60,35 @@ class RdvsController extends BaseController
 
     public function teste()
     {
-        // mettre à jour l'agenda du médecin
-        /* date, heure, idMedecin */
-        $input = $this->getRequestInput($this->request);
-        $heure = $input['heure'];
-        $date  = $input['date'];
-        $idMed = $input['idMedecin'];
-        /*$agenda = model("AgendasModel")->where('proprietaire_id', $idMed)
-            ->where('jour_dispo', $date)
-            ->where('heure_dispo_debut <=', $heure)
-            ->where('heure_dispo_fin >=', $heure)
-            ->first();
+        $souscription = model("SouscriptionsModel")->find(15);
+        $response = [
+            'statut' => 'ok',
+            'idS'   => $souscription->idSouscription,
+            'is'   => $souscription->id,
+            'data'   => $souscription,
+        ];
+        return $this->sendResponse($response);
 
-        $slot = array_filter($agenda->slots, function ($sl) use ($heure) {
-            return strtotime($sl['debut']) <= strtotime($heure) && strtotime($sl['fin']) > strtotime($heure);
-        });
-        $slot = reset($slot);
-        $agenda->removeSlot($slot['id']);
-        // print_r($agenda);
-        model("AgendasModel")->update($agenda->id, ['slots' => $agenda->slots]);
-        echo "weldone :)";
-        exit;*/
-        /*--------------------------------------------------------------------------------------------------------------*/
-        /*--------------------------------------------------------------------------------------------------------------*/
-        /*--------------------------------------------------------------------------------------------------------------*/
-        $agenda = model("AgendasModel")->where('proprietaire_id', $input['idMedecin'])
-            ->where('jour_dispo', $input['date'])
-            ->where('heure_dispo_debut <=', $heure)
-            ->where('heure_dispo_fin >=', $heure)
-            ->first();
-        print_r($agenda);
-        exit;
-        $slotID = 6;
-        $slotExist = array_filter($agenda->slots, function ($slot) use ($slotID) {
-            return $slot['id'] == $slotID;
-        });
-
-        if (!$slotExist || (bool)(reset($slotExist)['occupe'] ?? false)) // le slot n'esiste pas oubien est occupé
-        {
-            echo "le Slot n'est pas dispo";
-        } else {
-            $agenda->removeSlot($slotID);
+        $input     = $this->getRequestInput($this->request);
+        $payOption = model("PaiementOptionsModel")->find($input['idPayOption']);
+        $avance    = (float)$input['avance'];
+        $prixInitial = (float)$input['prix'];
+        $reduction = model("ReductionsModel")->where("code", $input['codeReduction'])->first();
+        $prixReduction = $this->calculateReduction($prixInitial, $reduction);
+        $minPay    = $payOption->get_initial_amount_from_option($prixInitial - $prixReduction);
+        if ($avance < $minPay) {
+            $response = [
+                'statut'  => 'no',
+                'message' => "Le montant minimal à payer pour cette option de paiement est $minPay.",
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
         }
-
-        model("AgendasModel")->update($agenda->id, ['slots' => $agenda->slots]);
-        echo "Weldone :)";
-        exit;
+        $response = [
+            'statut'  => 'ok',
+            'message' => 'Test  Envoi de message.',
+            'data'    => sendSmsMessage([653741031], "IncHAssur", "Welcome on Our Platform!"),
+        ];
+        return $this->sendResponse($response);
     }
 
     /**

@@ -822,7 +822,7 @@ class SouscriptionsController extends ResourceController
         $signatureModel->insert(['email' => $this->request->utilisateur->email, 'code' => $code2]);
 
         // envoie de l'email
-        if ($this->sendSignatureEmail($this->request->utilisateur->email, $code)) {
+        if ($this->sendSignatureEmail($this->request->utilisateur, $code)) {
             $response = [
                 'statut'  => 'ok',
                 'message' => 'Un code de signature a été envoyé dans votre boite mail.',
@@ -840,7 +840,7 @@ class SouscriptionsController extends ResourceController
     private function sendSignatureEmail($recipient, $code)
     {
         $email = emailer()->setFrom(setting('Email.fromEmail'), setting('Email.fromName') ?? '');
-        $email->setTo($recipient);
+        $email->setTo($recipient->email);
         $email->setCC(['ibikivan1@gmail.com', 'tonbongkevin@gmail.com']);
         $email->setSubject('Code Signature');
         $email->setMessage(view(
@@ -860,6 +860,11 @@ class SouscriptionsController extends ResourceController
             }
             $tentative++;
         }
+
+        $msg  = "Pour signer, utilisez le code: $code";
+        $dest = [$recipient->tel1];
+        sendSmsMessage($dest, "InchAssur", $msg);
+
         return true;
     }
 

@@ -13,7 +13,7 @@
 
     <div style="text-align: left">
         <p> À travers ce rappel, Nous sommes ravi de pouvoir vous aider dans votre planification.</p>
-        <p> N'oubliez pas l'échéance de paiement pour la transaction(ref:<?= $codetransaction ?>) est prévue pour demain.</p>
+        <p> N'oubliez pas l'échéance de paiement pour la transaction(ref:<?= $codetransaction ?>) qui est prévue pour demain.</p>
         <p> N'hésitez pas à accéder à la rubrique Paiements de votre compte, afin de procéder au paiement, où utilisez <a href="#">ce lien.</a>
         </p>
     </div>

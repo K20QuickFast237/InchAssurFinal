@@ -17,7 +17,7 @@ $routes = \Config\Services::routes();
  * --------------------------------------------------------------------
  */
 
-$routes->post('initpaiement/assurance', '\Modules\Paiements\Controllers\PaiementsController::InitiateAssurPayment');
+$routes->post('initpaiement/assurance', '\Modules\Paiements\Controllers\PaiementsController::newInitiateAssurPayment');
 $routes->group('paiements', ['namespace' => 'Modules\Paiements\Controllers'], static function ($routes) {
     $routes->get('',                       'PaiementsController::index');
     $routes->get('utilisateur/(:segment)', 'PaiementsController::index/$1');
@@ -27,6 +27,8 @@ $routes->group('paiements', ['namespace' => 'Modules\Paiements\Controllers'], st
     $routes->post('statut', 'PaiementsController::localSetPayStatus');
     $routes->post('avis', 'PaiementsController::payForAvis');
     $routes->post('consultation', 'PaiementsController::payForConsult');
+    $routes->post('transactions/pay', 'PaiementsController::payForTransact');
+    $routes->post('confirmTransaction', 'PaiementsController::localSetTransactPayStatus');
     $routes->post('confirmConsultation', 'PaiementsController::localSetConsultPayStatus');
     $routes->post('confirmAvis', 'PaiementsController::localSetAvisPayStatus');
     $routes->post('confirmRecharge', 'PaiementsController::localSetRechargePayStatus');
