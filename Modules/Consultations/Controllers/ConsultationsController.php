@@ -667,7 +667,7 @@ class ConsultationsController extends BaseController
             return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
         }
         $dateCode = new \DateTime($consult->date . ' ' . $consult->heure);
-        $dateCode->modify('+2 day');
+        $dateCode->modify("+" . ConsultationEntity::EPIRATION_TIME . " days");
         if (strtotime(date("Y-m-d H:i:s") > strtotime((string)$dateCode))) {
             model("consultationsModel")->update($consult->id, ['statut' => ConsultationEntity::EXPIREE]);
             $response = [
@@ -712,7 +712,7 @@ class ConsultationsController extends BaseController
 
         $email->setFrom('nanguedevops@gmail.com', 'IncH Assurance');
         $email->setTo($recipient);
-        $email->setCC(['tonbongkevin@gmail.com']);
+        $email->setCC(['tonbongkevin@gmail.com', 'ibikivan1@gmail.com']);
         $email->setSubject('Nouveau Rendez-vous');
         $email->setMessage("<h2>Bonjour " . $nomComplet . ".</h2>
                             <br>Vous venez de recevoir une demande de consultation Pour la date du $date à $heure.<br><br>
@@ -741,7 +741,7 @@ class ConsultationsController extends BaseController
 
         $email->setFrom('nanguedevops@gmail.com', 'IncH Assurance');
         $email->setTo($recipient['email']);
-        $email->setCC(['tonbongkevin@gmail.com']);
+        $email->setCC(['tonbongkevin@gmail.com', 'ibikivan1@gmail.com']);
         $email->setSubject('Demande Avis Expert Initiée');
         $email->setMessage("<h2>Bonjour " . $nomComplet . ".</h2>
                             <br>Votre demande d'avis d'expert à bien été initiée, Rendez-vous dans votre espace personnel,
@@ -772,7 +772,7 @@ class ConsultationsController extends BaseController
 
         $email->setFrom('nanguedevops@gmail.com', 'IncH Assurance');
         $email->setTo($recipient->email);
-        $email->setCC(['tonbongkevin@gmail.com']);
+        $email->setCC(['tonbongkevin@gmail.com', 'ibikivan1@gmail.com']);
         $email->setSubject('Nouveau Rendez-vous');
         $email->setMessage("<h2>Bonjour " . $nomComplet . ".</h2>
                             <br>Vous venez de recevoir une demande d'avis expert.<br><br>
@@ -804,7 +804,7 @@ class ConsultationsController extends BaseController
 
         $email->setFrom('nanguedevops@gmail.com', 'IncH Assurance');
         $email->setTo($recipient->email);
-        $email->setCC(['tonbongkevin@gmail.com']);
+        $email->setCC(['tonbongkevin@gmail.com', 'ibikivan1@gmail.com']);
         $email->setSubject('Confirmation de consultation');
         $email->setMessage("<h2>Bonjour " . $nomComplet . ".</h2>
                             <br>Rendez-vous numéro $code du $date à $heure confirmé.<br>
@@ -831,7 +831,7 @@ class ConsultationsController extends BaseController
 
             $email->setFrom('nanguedevops@gmail.com', 'IncH Assurance');
             $email->setTo($recipient);
-            $email->setCC(['tonbongkevin@gmail.com']);
+            $email->setCC(['tonbongkevin@gmail.com', 'ibikivan1@gmail.com']);
             $email->setSubject('Confirmation de consultation');
             $email->setMessage("<h2>Bonjour " . $nomComplet . ".</h2>
                             <br>Votre demande d'expertise pour $skillName a été envoyée.<br>

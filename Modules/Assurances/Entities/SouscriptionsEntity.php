@@ -168,6 +168,12 @@ class SouscriptionsEntity extends Entity
     public function isValid()
     {
         return $this->attributes['etat'] == self::ACTIF;
+        // return $this->attributes['etat'] == self::ACTIF && $this->hasServices();
+    }
+
+    public function hasServices()
+    {
+        return count($this->getServices());
     }
 
     /**

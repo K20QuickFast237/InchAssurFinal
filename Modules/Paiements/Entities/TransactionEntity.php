@@ -8,9 +8,9 @@ class TransactionEntity extends Entity
 {
     // const TOTALE = 'Totale', PARTIEL = 'Partielle';
     // const INITIE = 0, TERMINE = 1, EN_COURS = 2;
-    const INITIE = 0, EN_COURS = 1, TERMINE = 2;
+    const INITIE = 0, EN_COURS = 1, TERMINE = 2, EXPIRE = 3; // Expire: etat d'une transaction à laquelle le client n'a pas respecté les rêgles du contrat.
     // public static $etats = ["Initiée", "Terminée", "En Cours"];
-    public static $etats = ["Initiée", "En Cours", "Terminée"];
+    public static $etats = ["Initiée", "En Cours", "Terminée", "Expirée"];
 
     protected $datamap  = [
         'idTransaction' => 'id',
@@ -52,7 +52,7 @@ class TransactionEntity extends Entity
             $this->attributes['pay_option_id'] = model('PaiementOptionsModel')->getUltraSimplified($this->attributes['pay_option_id']);
         }
 
-        return $this?->attributes['pay_option_id'];
+        return $this->attributes['pay_option_id'] ?? null;
     }
 
     /**
@@ -68,7 +68,7 @@ class TransactionEntity extends Entity
             $this->attributes['beneficiaire_id'] = model('UtilisateursModel')->getSimplified($this->attributes['beneficiaire_id']);
         }
 
-        return $this?->attributes['beneficiaire_id'];
+        return $this->attributes['beneficiaire_id'] ?? null;
     }
 
     public function getLignes()

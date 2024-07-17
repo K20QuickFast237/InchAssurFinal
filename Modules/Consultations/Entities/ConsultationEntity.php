@@ -10,7 +10,7 @@ class ConsultationEntity extends Entity
 {
     use EtatsListTrait;
 
-    const DEFAULT_DUREE = 30;
+    const DEFAULT_DUREE = 30, EPIRATION_TIME = 3;
     const ENATTENTE = 0, VALIDE = 1, EXPIREE = 2, // REFUSE = 2,
         ENCOURS = 3, TERMINE = 4, ANNULE = 5, TRANSMIS = 6, ECHOUE = 7;
     const statuts = ["En Attente", "Validé", "Expiré", "En Cours", "Terminé", "Annulé", "Transmis", "Échoué"];

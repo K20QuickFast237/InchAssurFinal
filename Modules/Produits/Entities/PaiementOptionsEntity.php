@@ -7,6 +7,7 @@ use CodeIgniter\Entity\Entity;
 
 class PaiementOptionsEntity extends Entity
 {
+    const UNIQUE = 'Unique', CYCLIQUE = 'Planifié', PERIODE = 'A Echéance';
     const DefaultID = 1;
     // Defining a type with parameters
     protected $casts = [

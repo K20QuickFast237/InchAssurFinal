@@ -10,10 +10,14 @@ use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\API\ResponseTrait;
 use App\Traits\ControllerUtilsTrait;
 use App\Traits\ErrorsDataTrait;
+use DateTime;
+use Modules\Assurances\Entities\SouscriptionsEntity;
+use Modules\Consultations\Entities\AvisExpertEntity;
 use Modules\Consultations\Entities\ConsultationEntity;
 use Modules\Paiements\Entities\PaiementEntity;
 use Modules\Paiements\Entities\PayOptionEntity;
 use Modules\Paiements\Entities\TransactionEntity;
+use Modules\Produits\Entities\PaiementOptionsEntity;
 
 class RdvsController extends BaseController
 {
@@ -60,35 +64,13 @@ class RdvsController extends BaseController
 
     public function teste()
     {
-        $souscription = model("SouscriptionsModel")->find(15);
-        $response = [
-            'statut' => 'ok',
-            'idS'   => $souscription->idSouscription,
-            'is'   => $souscription->id,
-            'data'   => $souscription,
-        ];
-        return $this->sendResponse($response);
 
-        $input     = $this->getRequestInput($this->request);
-        $payOption = model("PaiementOptionsModel")->find($input['idPayOption']);
-        $avance    = (float)$input['avance'];
-        $prixInitial = (float)$input['prix'];
-        $reduction = model("ReductionsModel")->where("code", $input['codeReduction'])->first();
-        $prixReduction = $this->calculateReduction($prixInitial, $reduction);
-        $minPay    = $payOption->get_initial_amount_from_option($prixInitial - $prixReduction);
-        if ($avance < $minPay) {
-            $response = [
-                'statut'  => 'no',
-                'message' => "Le montant minimal à payer pour cette option de paiement est $minPay.",
-            ];
-            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
-        }
-        $response = [
-            'statut'  => 'ok',
-            'message' => 'Test  Envoi de message.',
-            'data'    => sendSmsMessage([653741031], "IncHAssur", "Welcome on Our Platform!"),
-        ];
-        return $this->sendResponse($response);
+        // $response = [
+        //     'statut'  => 'ok',
+        //     'message' => count($consults) . ' Elements trouvés',
+        //     'data'    => $consults,
+        // ];
+        // return $this->sendResponse($response);
     }
 
     /**

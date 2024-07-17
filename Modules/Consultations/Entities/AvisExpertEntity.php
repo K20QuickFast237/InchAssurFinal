@@ -36,7 +36,7 @@ class AvisExpertEntity extends Entity
             $this->attributes['medecin_sender_id'] = model("UtilisateursModel")->getSimplifiedArray($this->attributes['medecin_sender_id']);
         }
 
-        return $this->attributes['medecin_sender_id'];
+        return $this->attributes['medecin_sender_id'] ?? null;
     }
 
     public function getMedecinReceiverId()
@@ -45,7 +45,7 @@ class AvisExpertEntity extends Entity
             $this->attributes['medecin_receiver_id'] = model("UtilisateursModel")->getSimplifiedArray($this->attributes['medecin_receiver_id']);
         }
 
-        return $this->attributes['medecin_receiver_id'];
+        return $this->attributes['medecin_receiver_id'] ?? null;
     }
 
     public function getDocuments()
@@ -55,7 +55,7 @@ class AvisExpertEntity extends Entity
             $this->attributes['documents'] = $docIds ? model("DocumentsModel")->getMultiSimplified($docIds) : [];
         }
 
-        return $this->attributes['documents'];
+        return $this->attributes['documents'] ?? null;
     }
 
     public function getAttachements()
@@ -65,6 +65,6 @@ class AvisExpertEntity extends Entity
             $this->attributes['attachements'] = $docIds ? model("DocumentsModel")->getMultiSimplified($docIds) : [];
         }
 
-        return $this->attributes['attachements'];
+        return $this->attributes['attachements'] ?? null;
     }
 }
