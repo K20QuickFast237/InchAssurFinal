@@ -78,6 +78,16 @@ class ConsultationEntity extends Entity
         return $this->attributes['localisation_id'];
     }
 
+    public function getOrdonnance()
+    {
+        if (!isset($this->attributes['ordonnance'])) {
+            $ord = model("OrdonnancesModel")->where('consultation_id', $this->attributes['id'])->first();
+            $this->attributes['ordonnance'] = $ord ? $ord : null;
+        }
+
+        return $this->attributes['ordonnance'] ?? null;
+    }
+
     public function getDocuments()
     {
         if (!isset($this->attributes['documents'])) {

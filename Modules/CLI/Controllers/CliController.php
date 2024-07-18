@@ -92,20 +92,57 @@ class CliController extends Controller
             Fait passer l'état des souscriptions à inactive après la date de fin, 
             ainsi que lorsque les services sont totalement consommés
         */
-        $souscriptions = model("SouscriptionsModel")->where('etat', SouscriptionsEntity::ACTIF)->findAll();
+        $souscriptions = model("SouscriptionsModel")->join('utilisateurs', 'souscripteur_id=utilisateurs.id', 'left')
+            ->select('souscriptions.*, nom, prenom, email, tel1')
+            ->where('souscriptions.etat', SouscriptionsEntity::ACTIF)
+            ->findAll();
 
         $endedIds = [];
+        $data = [];
         foreach ($souscriptions as $souscript) {
             if (strtotime(date("Y-m-d")) > strtotime($souscript->dateFinValidite)) {
                 $endedIds[] = $souscript->id;
+                $dateFin = new \Datetime($souscript->dateFinValidite);
+                $gap = $dateFin->diff(new \DateTime())->days;
+                if ($gap == SouscriptionsEntity::EXP_REMEMBER_TIME) {
+                    $data[] = [
+                        "email" => $souscript->email,
+                        "nom"   => $souscript->nom . ' ' . $souscript->prenom,
+                        "tel"   => $souscript->tel1,
+                        "subsCode" => $souscript->code,
+                    ];
+                }
             }
             if (!$souscript->hasServices()) {
                 $endedIds[] = $souscript->id;
             }
         }
-
+        if ($data) {
+            $this->sendSouscriptionMails($data);
+        }
         model("SouscriptionsModel")->whereIn('id', $endedIds)->set('etat', SouscriptionsEntity::TERMINE)->update();
+
         return 0;
+    }
+
+    private function sendSouscriptionMails(array $data)
+    {
+        // envoie sms
+        $tels = array_column($data, 'tel');
+        sendSmsMessage($tels, "IncHAssur", "Cher Utilisateur, vous avez une souscription qui expire dans " . SouscriptionsEntity::EXP_REMEMBER_TIME . " jours. Merci de faire confiance à IncHAssur.");
+
+        // envoi mail
+        $email = Services::email();
+        foreach ($data as $info) {
+            $email->setFrom('nanguedevops@gmail.com', 'IncH Assurance');
+            $email->setTo($info['email']);
+            $email->setCC(['tonbongkevin@gmail.com', 'ibikivan1@gmail.com']);
+            $email->setSubject('Fin de souscription Imminente');
+            $email->setMessage("<h2>Bonjour " . $info['nom'] . ".</h2>
+                <br>Votre souscription numéro " . $info['code'] . " arrive à expiration dans " . SouscriptionsEntity::EXP_REMEMBER_TIME . " jours. Vous pouvez la renouveller à tout moment.
+                Merci de faire partie de nos utilisateurs de marque.
+                InchAssur-" . date('d-m-Y H:i'));
+        }
     }
 
     private function managePay()

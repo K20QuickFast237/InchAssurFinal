@@ -6,7 +6,7 @@ use CodeIgniter\Entity\Entity;
 
 class SouscriptionsEntity extends Entity
 {
-    const PENDING = 0, ACTIF = 1, TERMINE = 2;
+    const PENDING = 0, ACTIF = 1, TERMINE = 2, EXP_REMEMBER_TIME = 5;
     public static $etats = ["Pending", "Actif", "Terminée"];
 
     protected $datamap = [

@@ -3,6 +3,7 @@
 namespace Modules\Consultations\Models;
 
 use CodeIgniter\Model;
+use Modules\Consultations\Entities\OrdonnanceEntity;
 
 class OrdonnancesModel extends Model
 {
@@ -11,10 +12,10 @@ class OrdonnancesModel extends Model
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $insertID         = 1;
-    protected $returnType       = 'array';
+    protected $returnType       = OrdonnanceEntity::class;
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['prescription', 'consultation_id'];
+    protected $allowedFields    = ['prescription', 'consultation_id', 'instructions', 'observations'];
 
     // Dates
     protected $useTimestamps = false;

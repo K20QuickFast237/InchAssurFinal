@@ -10,6 +10,7 @@ use CodeIgniter\API\ResponseTrait;
 use Config\Services;
 use Modules\Consultations\Entities\AvisExpertEntity;
 use Modules\Consultations\Entities\ConsultationEntity;
+use Modules\Consultations\Entities\OrdonnanceEntity;
 use Modules\Paiements\Entities\PaiementEntity;
 use Modules\Paiements\Entities\TransactionEntity;
 
@@ -111,6 +112,7 @@ class ConsultationsController extends BaseController
             $consult->previous;
         }
         $consult->documents;
+        $consult->ordonnance;
         $consult->transaction;
         $response = [
             'statut'  => 'ok',
@@ -269,6 +271,97 @@ class ConsultationsController extends BaseController
             'statut'  => 'ok',
             'message' => $message ?? 'Consultation mise à jour.',
             'data'    => $data ?? [],
+        ];
+        return $this->sendResponse($response);
+    }
+
+    /**
+     * Ajoute une ordonnance à cette consultation
+     *
+     * @param  int|string $identifier
+     * @return ResponseInterface The HTTP response.
+     */
+    public function setOrdonnance($identifier)
+    {
+        // restrint seulement aux médecins
+        // if (!auth()->user()->inGroup('medecin')) {
+        //     $response = [
+        //         'statut' => 'no',
+        //         'message' => 'Action non authorisée pour ce profil.',
+        //     ];
+        //     return $this->sendResponse($response, ResponseInterface::HTTP_UNAUTHORIZED);
+        // }
+
+        $rules = [
+            'instructions'  => 'if_exist',
+            'observations'  => [
+                'rules'  => 'required',
+                'errors' => ['required' => "Précisez les observations."]
+            ],
+            "prescription.*.dosage" => [
+                "rules" => 'if_exist',
+                "errors"  => [
+                    'required' => 'précisez le dosage de chaque prescription.',
+                ],
+            ],
+            "prescription.*.frequence" => [
+                "rules" => 'if_exist',
+                "errors"  => [
+                    'required' => 'précisez la frequence de chaque prescription.',
+                ],
+            ],
+            "prescription.*.medecine" => [
+                "rules" => 'required',
+                "errors"  => [
+                    'required' => 'précisez le médicament de chaque prescription.',
+                ],
+            ],
+            "prescription.*.length" => 'if_exist',
+        ];
+
+        try {
+            if (!$this->validate($rules)) {
+                $hasError = true;
+                throw new \Exception('');
+            }
+        } catch (\Throwable $th) {
+            $errorsData = $this->getErrorsData($th, isset($hasError));
+            $validationError = $errorsData['code'] == ResponseInterface::HTTP_NOT_ACCEPTABLE;
+            $response = [
+                'statut'  => 'no',
+                'message' => $validationError ? $errorsData['errors'] : "Impossible d'envoyer cette demande.",
+                'errors'  => $errorsData['errors'],
+            ];
+            return $this->sendResponse($response, $errorsData['code']);
+        }
+        $input = $this->getRequestInput($this->request);
+
+        $identifier = $this->getIdentifier($identifier);
+        $consult = model("ConsultationsModel")->where($identifier['name'], $identifier['value'])->first();
+        if (!$consult) {
+            $response = [
+                'statut'  => 'no',
+                'message' => "Impossible d'identifier la consultation.",
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+        }
+        // Restrint au médecin auteur de la consultation
+        // if ($consult->medecin_user_id['idUtilisateur'] != $this->request->utilisateur->idUtilisateur) {
+        //     $response = [
+        //         'statut'  => 'no',
+        //         'message' => "Vous n'êtes pas authorisé à effectuer cette consultation.",
+        //     ];
+        //     return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+        // }
+
+        // enregistrement de l'ordonnance
+        $input['consultation_id'] = $consult->id;
+        $ordonnance = new OrdonnanceEntity($input);
+        $ordonnance->id = model("OrdonnancesModel")->insert($ordonnance);
+
+        $response = [
+            'statut'  => 'ok',
+            'message' => 'Ordonnance Enregistrée.',
         ];
         return $this->sendResponse($response);
     }

@@ -14,6 +14,7 @@ use DateTime;
 use Modules\Assurances\Entities\SouscriptionsEntity;
 use Modules\Consultations\Entities\AvisExpertEntity;
 use Modules\Consultations\Entities\ConsultationEntity;
+use Modules\Consultations\Entities\OrdonnanceEntity;
 use Modules\Paiements\Entities\PaiementEntity;
 use Modules\Paiements\Entities\PayOptionEntity;
 use Modules\Paiements\Entities\TransactionEntity;
@@ -64,13 +65,19 @@ class RdvsController extends BaseController
 
     public function teste()
     {
+        // $input = $this->getRequestInput($this->request);
+        // $input['prescription'] = $input['medecine'];
+        // $input['consultation_id'] = 3;
+        // $ordonnance = new OrdonnanceEntity($input);
+        // $ordonnance->id = model("OrdonnancesModel")->insert($ordonnance);
 
-        // $response = [
-        //     'statut'  => 'ok',
-        //     'message' => count($consults) . ' Elements trouvés',
-        //     'data'    => $consults,
-        // ];
-        // return $this->sendResponse($response);
+        $ordonnance = model("OrdonnancesModel")->find(2);
+        $response = [
+            'statut'  => 'ok',
+            'message' => 'Elements trouvés',
+            'data'    => $ordonnance,
+        ];
+        return $this->sendResponse($response);
     }
 
     /**
