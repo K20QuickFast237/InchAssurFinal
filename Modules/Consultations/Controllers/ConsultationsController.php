@@ -354,10 +354,14 @@ class ConsultationsController extends BaseController
         //     return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
         // }
 
-        // enregistrement de l'ordonnance
+        // enregistrement de l'ordonnance ou met à jour si une existe déjà
         $input['consultation_id'] = $consult->id;
-        $ordonnance = new OrdonnanceEntity($input);
-        $ordonnance->id = model("OrdonnancesModel")->insert($ordonnance);
+        $ordonnance = model("OrdonnancesModel")->where('consultation_id', $consult->id)->first() ?? new OrdonnanceEntity($input);
+        if ($consult) {
+            model("OrdonnancesModel")->update($ordonnance);
+        } else {
+            $ordonnance->id = model("OrdonnancesModel")->insert($ordonnance);
+        }
 
         $response = [
             'statut'  => 'ok',
