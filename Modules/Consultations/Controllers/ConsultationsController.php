@@ -346,20 +346,22 @@ class ConsultationsController extends BaseController
             return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
         }
         // Restrint au médecin auteur de la consultation
-        // if ($consult->medecin_user_id['idUtilisateur'] != $this->request->utilisateur->idUtilisateur) {
-        //     $response = [
-        //         'statut'  => 'no',
-        //         'message' => "Vous n'êtes pas authorisé à effectuer cette consultation.",
-        //     ];
-        //     return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
-        // }
+        if ($consult->medecin_user_id['idUtilisateur'] != $this->request->utilisateur->idUtilisateur) {
+            $response = [
+                'statut'  => 'no',
+                'message' => "Vous n'êtes pas authorisé à effectuer cette consultation.",
+            ];
+            return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
+        }
 
-        // enregistrement de l'ordonnance ou met à jour si une existe déjà
+        // enregistre l'ordonnance ou met à jour si une existe déjà
         $input['consultation_id'] = $consult->id;
-        $ordonnance = model("OrdonnancesModel")->where('consultation_id', $consult->id)->first() ?? new OrdonnanceEntity($input);
-        if ($consult) {
-            model("OrdonnancesModel")->update($ordonnance);
+        $ordonnance = model("OrdonnancesModel")->where('consultation_id', $consult->id)->first();
+        if ($ordonnance) {
+            $ordonnance->fill($input);
+            model("OrdonnancesModel")->update($ordonnance->id, $ordonnance);
         } else {
+            $ordonnance = new OrdonnanceEntity($input);
             $ordonnance->id = model("OrdonnancesModel")->insert($ordonnance);
         }
 
@@ -749,7 +751,9 @@ class ConsultationsController extends BaseController
             ];
             return $this->sendResponse($response, ResponseInterface::HTTP_EXPECTATION_FAILED);
         }
-        if (!array_search($consult->statut, [ConsultationEntity::statuts[ConsultationEntity::VALIDE], ConsultationEntity::statuts[ConsultationEntity::ENCOURS], ConsultationEntity::statuts[ConsultationEntity::TRANSMIS]])) {
+        $statuts = [null, ConsultationEntity::statuts[ConsultationEntity::VALIDE], ConsultationEntity::statuts[ConsultationEntity::ENCOURS], ConsultationEntity::statuts[ConsultationEntity::TRANSMIS]];
+        if (!array_search($consult->statut, $statuts)) {
+            echo "trouvé";
             $response = [
                 'statut'  => 'no',
                 'message' => "Consultation $consult->statut ne peut être démarrée.",
@@ -765,7 +769,7 @@ class ConsultationsController extends BaseController
         }
         $dateCode = new \DateTime($consult->date . ' ' . $consult->heure);
         $dateCode->modify("+" . ConsultationEntity::EPIRATION_TIME . " days");
-        if (strtotime(date("Y-m-d H:i:s") > strtotime((string)$dateCode))) {
+        if (strtotime(date("Y-m-d H:i:s") > strtotime($dateCode->format('Y-m-d H:i:s')))) {
             model("consultationsModel")->update($consult->id, ['statut' => ConsultationEntity::EXPIREE]);
             $response = [
                 'statut'  => 'no',

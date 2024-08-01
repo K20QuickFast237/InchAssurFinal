@@ -82,6 +82,7 @@ class ConsultationEntity extends Entity
     {
         if (!isset($this->attributes['ordonnance'])) {
             $ord = model("OrdonnancesModel")->where('consultation_id', $this->attributes['id'])->first();
+            // unset($ord->consultation_id);
             $this->attributes['ordonnance'] = $ord ? $ord : null;
         }
 

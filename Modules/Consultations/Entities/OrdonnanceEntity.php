@@ -12,7 +12,8 @@ class OrdonnanceEntity extends Entity
     ];
 
     protected $casts = [
-        'id' => "integer",
-        'prescription' => "?json-array",
+        'id'              => "integer",
+        'consultation_id' => "integer",
+        'prescription'    => "?json-array",
     ];
 }

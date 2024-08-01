@@ -426,13 +426,20 @@ class ConversationsController extends BaseController
             ];
             return $this->sendResponse($response, $errorsData['code']);
         }
+        $messages = model("MessagesModel")
+            ->select("messages.*, message_images.image_id, message_documents.document_id")
+            ->join("message_images", "messages.id = message_images.message_id", "left")
+            ->join("message_documents", "messages.id = message_documents.message_id", "left")
+            ->where("to_conversation_id", $id)
+            ->where("messages.id", $msgId)
+            ->findAll();
 
         $response = [
             'statut'  => 'ok',
             'message' => 'message envoyé',
-            'data'    => $data,
-            'titles'  => $titles,
-            'documents' => $documents,
+            'data'    => $messages,
+            // 'titles'  => $titles,
+            // 'documents' => $documents,
         ];
         return $this->sendResponse($response);
     }
